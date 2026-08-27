@@ -555,3 +555,7 @@ curl -k https://myapp.test/
 - [معماری سیستم](09_documentation/architecture.md)
 - [راهنمای استقرار](09_documentation/deployment_guide.md)
 - [راهنمای رفع اشکال](09_documentation/troubleshooting.md)
+
+## مستندات قابلیت‌ها
+
+- [راهنمای قابلیت SEO Auditor](09_documentation/features/seo_auditor.md)
