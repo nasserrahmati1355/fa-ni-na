@@ -1,6 +1,4 @@
 # {{ ansible_managed }}
-# version: "3.8"
-
 services:
   db:
     image: "${MARIADB_IMAGE:-{{ mariadb_image }}}"
@@ -44,6 +42,17 @@ services:
     restart: unless-stopped
     init: true
 
+    environment:
+      DB_HOST: db
+      DB_NAME: "${MARIADB_DATABASE:-{{ mariadb_database }}}"
+      DB_USER: root
+      DB_PASSWORD_FILE: /run/secrets/db-password
+      SEO_MAX_PAGES: "${SEO_MAX_PAGES:-{{ seo_max_pages }}}"
+      SEO_REQUEST_TIMEOUT_SECONDS: "${SEO_REQUEST_TIMEOUT_SECONDS:-{{ seo_request_timeout_seconds }}}"
+      SEO_MAX_RESPONSE_BYTES: "${SEO_MAX_RESPONSE_BYTES:-{{ seo_max_response_bytes }}}"
+      SEO_CRAWL_DELAY_SECONDS: "${SEO_CRAWL_DELAY_SECONDS:-{{ seo_crawl_delay_seconds }}}"
+      SEO_MAX_REDIRECTS: "${SEO_MAX_REDIRECTS:-{{ seo_max_redirects }}}"
+
     secrets:
       - db-password
 
@@ -63,7 +72,7 @@ services:
         - CMD
         - python
         - -c
-        - import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/", timeout=3).read()
+        - import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=3).read()
       interval: 10s
       timeout: 5s
       retries: 5

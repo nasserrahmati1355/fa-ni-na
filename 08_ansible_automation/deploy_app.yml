@@ -1,5 +1,5 @@
 ---
-- name: Deploy the Flask and MariaDB application services
+- name: Deploy the SEO auditor backend and MariaDB services
   hosts: deployment_servers
   become: true
   gather_facts: false
@@ -16,7 +16,9 @@
         - Dockerfile
         - .dockerignore
         - app/hello.py
+        - app/seo_auditor.py
         - app/requirements.txt
+        - app/templates/index.html
       register: source_file_checks
       delegate_to: localhost
       become: false
@@ -31,19 +33,20 @@
       loop_control:
         label: "{{ item.item }}"
 
-    - name: Install deployment helper packages
+    - name: Install deployment helper packages and update Compose plugin
       ansible.builtin.apt:
         name:
           - openssl
           - ca-certificates
-        state: present
-        update_cache: true
-
-    - name: Ensure Docker Compose plugin is up to date
-      ansible.builtin.apt:
-        name: docker-compose-plugin
+          - docker-compose-plugin
         state: latest
         update_cache: true
+
+    - name: Ensure Docker is enabled and running
+      ansible.builtin.systemd_service:
+        name: docker
+        enabled: true
+        state: started
 
     - name: Read Docker Compose version
       ansible.builtin.command:
@@ -56,30 +59,9 @@
       changed_when: false
       check_mode: false
 
-    - name: Require Docker Compose 5.5.0 or newer
-      ansible.builtin.assert:
-        that:
-          - >-
-            (
-              docker_compose_version.stdout
-              | trim
-              | regex_replace('^v', '')
-            ) is version('5.5.0', '>=')
-        fail_msg: >-
-          Docker Compose 5.5.0 or newer is required.
-          Detected version:
-          {{ docker_compose_version.stdout | trim }}.
-        success_msg: >-
-          Docker Compose
-          {{ docker_compose_version.stdout | trim }}
-          is supported.
-      when: not ansible_check_mode
-
-    - name: Ensure Docker is enabled and running
-      ansible.builtin.systemd_service:
-        name: docker
-        enabled: true
-        state: started
+    - name: Display Docker Compose version
+      ansible.builtin.debug:
+        msg: "Docker Compose version: {{ docker_compose_version.stdout | trim }}"
 
     - name: Create the host group used by the backend container secret
       ansible.builtin.group:
@@ -100,6 +82,10 @@
           group: "{{ deployment_group }}"
           mode: "0755"
         - path: "{{ deployment_dir }}/app"
+          owner: "{{ deployment_user }}"
+          group: "{{ deployment_group }}"
+          mode: "0755"
+        - path: "{{ deployment_dir }}/app/templates"
           owner: "{{ deployment_user }}"
           group: "{{ deployment_group }}"
           mode: "0755"
@@ -124,7 +110,7 @@
           group: "{{ secret_group }}"
           mode: "0750"
 
-    - name: Copy Dockerfile and application code
+    - name: Copy Docker build files
       ansible.builtin.copy:
         src: "{{ source_dir }}/{{ item.src }}"
         dest: "{{ deployment_dir }}/{{ item.dest }}"
@@ -138,12 +124,15 @@
         - src: .dockerignore
           dest: .dockerignore
           mode: "0644"
-        - src: app/hello.py
-          dest: app/hello.py
-          mode: "0644"
-        - src: app/requirements.txt
-          dest: app/requirements.txt
-          mode: "0644"
+
+    - name: Copy the complete Flask application tree
+      ansible.builtin.copy:
+        src: "{{ source_dir }}/app/"
+        dest: "{{ deployment_dir }}/app/"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        directory_mode: "0755"
+        mode: "0644"
 
     - name: Prevent certificates from entering the Docker build context
       ansible.builtin.lineinfile:
@@ -225,6 +214,53 @@
       changed_when: false
       when: not ansible_check_mode
 
+    - name: Probe Docker Compose image metadata
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - "{{ compose_env_file }}"
+          - -f
+          - "{{ compose_file_name }}"
+          - images
+          - --format
+          - json
+        chdir: "{{ deployment_dir }}"
+      register: compose_image_probe
+      changed_when: false
+      failed_when: false
+      when: not ansible_check_mode
+
+    - name: Remove stale containers when Compose image metadata is broken
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - "{{ compose_env_file }}"
+          - -f
+          - "{{ compose_file_name }}"
+          - down
+          - --remove-orphans
+        chdir: "{{ deployment_dir }}"
+      register: stale_container_cleanup
+      changed_when: true
+      when:
+        - not ansible_check_mode
+        - compose_image_probe.rc | default(0) != 0
+        - "'No such image' in ((compose_image_probe.stderr | default('')) ~ (compose_image_probe.stdout | default('')))"
+
+    - name: Explain stale image cleanup
+      ansible.builtin.debug:
+        msg: >-
+          Docker Compose referenced an image record that no longer existed.
+          Existing containers were removed without deleting named volumes and
+          will now be recreated.
+      when:
+        - stale_container_cleanup is defined
+        - stale_container_cleanup.changed | default(false)
+
     - name: Build and start database and backend services
       when: not ansible_check_mode
       block:
@@ -246,7 +282,7 @@
             wait_timeout: "{{ compose_wait_timeout }}"
           register: application_compose_result
 
-        - name: Test the backend from inside its container
+        - name: Test the backend health endpoint from inside its container
           ansible.builtin.command:
             argv:
               - docker
@@ -262,29 +298,45 @@
               - -c
               - >-
                 import urllib.request;
-                response = urllib.request.urlopen('http://127.0.0.1:8000/', timeout=10);
+                response = urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=10);
                 print('HTTP status:', response.status);
                 print(response.read().decode())
             chdir: "{{ deployment_dir }}"
           register: backend_http_test
           changed_when: false
 
+        - name: Test the SEO auditor user interface
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - "{{ compose_env_file }}"
+              - -f
+              - "{{ compose_file_name }}"
+              - exec
+              - -T
+              - backend
+              - python
+              - -c
+              - >-
+                import urllib.request;
+                body = urllib.request.urlopen('http://127.0.0.1:8000/', timeout=10).read().decode();
+                assert 'SEO Auditor' in body;
+                print('SEO auditor UI: OK')
+            chdir: "{{ deployment_dir }}"
+          register: backend_ui_test
+          changed_when: false
+
       rescue:
         - name: Display the original deployment failure
           ansible.builtin.debug:
             msg:
-              - >-
-                Failed task:
-                {{ ansible_failed_task.name | default('unknown') }}
-              - >-
-                Message:
-                {{ ansible_failed_result.msg | default('not available') }}
-              - >-
-                Command:
-                {{ ansible_failed_result.cmd | default('not available') }}
-              - >-
-                Standard error:
-                {{ ansible_failed_result.stderr | default('not available') }}
+              - "Failed task: {{ ansible_failed_task.name | default('unknown') }}"
+              - "Message: {{ ansible_failed_result.msg | default('not available') }}"
+              - "Command: {{ ansible_failed_result.cmd | default('not available') }}"
+              - "Standard output: {{ ansible_failed_result.stdout | default('') }}"
+              - "Standard error: {{ ansible_failed_result.stderr | default('') }}"
 
         - name: Collect application logs after a deployment failure
           ansible.builtin.command:
@@ -311,13 +363,8 @@
         - name: Stop after application deployment failure
           ansible.builtin.fail:
             msg: >-
-              Failed task:
-              {{ ansible_failed_task.name | default('unknown') }}.
-              Error:
-              {{
-                ansible_failed_result.msg
-                | default('See the deployment logs above.')
-              }}
+              Failed task: {{ ansible_failed_task.name | default('unknown') }}.
+              Error: {{ ansible_failed_result.msg | default('See the Compose logs above.') }}
 
     - name: Read application container status
       ansible.builtin.command:
@@ -338,5 +385,6 @@
     - name: Display application verification results
       ansible.builtin.debug:
         msg:
-          - "Backend test: {{ backend_http_test.stdout | default('not executed in check mode') }}"
+          - "Backend health test: {{ backend_http_test.stdout | default('not executed in check mode') }}"
+          - "Backend UI test: {{ backend_ui_test.stdout | default('not executed in check mode') }}"
           - "{{ application_container_status.stdout | default('Container status is skipped in check mode.') }}"

@@ -122,6 +122,14 @@
             return_content: true
           register: server_https_test
 
+        - name: Verify the SEO auditor page was returned
+          ansible.builtin.assert:
+            that:
+              - "'SEO Auditor' in server_https_test.content"
+              - "'بررسی فنی سئوی سایت' in server_https_test.content"
+            fail_msg: "The HTTPS endpoint did not return the SEO auditor interface."
+            success_msg: "The SEO auditor interface is available over HTTPS."
+
         - name: Test HTTP redirect from the Ansible Controller
           ansible.builtin.command:
             argv:
