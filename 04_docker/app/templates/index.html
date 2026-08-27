@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SEO Auditor</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f3f5f8;
+            --surface: #ffffff;
+            --text: #172033;
+            --muted: #667085;
+            --border: #dfe3eb;
+            --primary: #3347b0;
+            --danger: #b42318;
+            --warning: #b54708;
+            --success: #067647;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Tahoma, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.75;
+        }
+        .container { width: min(1180px, 94%); margin: 36px auto 72px; }
+        .hero, .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 10px 28px rgba(16, 24, 40, .06);
+        }
+        .hero { padding: 30px; margin-bottom: 22px; }
+        .hero h1 { margin: 0 0 8px; font-size: clamp(25px, 4vw, 38px); }
+        .hero p { margin: 0; color: var(--muted); }
+        form {
+            display: grid;
+            grid-template-columns: 1fr 150px auto;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        input, select, button {
+            width: 100%;
+            min-height: 48px;
+            border-radius: 10px;
+            font: inherit;
+        }
+        input, select { border: 1px solid var(--border); padding: 9px 13px; background: #fff; }
+        button {
+            border: 0;
+            padding: 10px 22px;
+            cursor: pointer;
+            color: #fff;
+            background: var(--primary);
+            font-weight: 700;
+        }
+        .notice { margin-top: 14px; font-size: 13px; color: var(--muted); }
+        .alert { padding: 14px 18px; border-radius: 10px; margin: 14px 0; }
+        .alert-danger { color: var(--danger); background: #fef3f2; border: 1px solid #fecdca; }
+        .alert-warning { color: var(--warning); background: #fffaeb; border: 1px solid #fedf89; }
+        .panel { padding: 24px; margin-top: 22px; }
+        .panel h2 { margin-top: 0; }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(130px, 1fr));
+            gap: 12px;
+            margin: 18px 0 26px;
+        }
+        .card { border: 1px solid var(--border); border-radius: 13px; padding: 16px; background: #fafbfc; }
+        .card strong { display: block; font-size: 28px; line-height: 1.2; }
+        .card span { color: var(--muted); font-size: 13px; }
+        .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1050px; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border); vertical-align: top; }
+        th { background: #f8f9fc; font-size: 13px; }
+        tr:last-child td { border-bottom: 0; }
+        a { color: var(--primary); overflow-wrap: anywhere; }
+        .badge { display: inline-block; border-radius: 999px; padding: 3px 9px; margin: 2px; font-size: 12px; }
+        .badge-error { color: var(--danger); background: #fef3f2; }
+        .badge-warning { color: var(--warning); background: #fffaeb; }
+        .badge-ok { color: var(--success); background: #ecfdf3; }
+        .muted { color: var(--muted); font-size: 13px; }
+        code { direction: ltr; unicode-bidi: embed; }
+        @media (max-width: 900px) {
+            form { grid-template-columns: 1fr; }
+            .cards { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+    <section class="hero">
+        <h1>بررسی فنی سئوی سایت</h1>
+        <p>لینک‌های داخلی، خطاهای HTTP و مهم‌ترین عناصر On-page را به‌صورت محدود بررسی کنید.</p>
+
+        <form method="post">
+            <input
+                type="text"
+                name="url"
+                value="{{ submitted_url }}"
+                placeholder="https://example.com"
+                aria-label="آدرس سایت"
+                required
+            >
+            <select name="max_pages" aria-label="حداکثر صفحات">
+                {% for count in [5, 10, 15, 20, 25] %}
+                    <option value="{{ count }}" {% if submitted_max_pages == count %}selected{% endif %}>
+                        {{ count }} صفحه
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit">شروع بررسی</button>
+        </form>
+
+        <div class="notice">
+            فقط سایت‌هایی را بررسی کنید که مالک آن‌ها هستید یا اجازه بررسی دارید. این نسخه JavaScript را Render نمی‌کند،
+            فقط همان Host را Crawl می‌کند و دسترسی به IPهای خصوصی و پورت‌های غیر از 80/443 را مسدود می‌کند.
+        </div>
+    </section>
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    {% if database_warning %}
+        <div class="alert alert-warning">{{ database_warning }}</div>
+    {% endif %}
+
+    {% if report %}
+        <section class="panel">
+            <h2>نتیجه بررسی</h2>
+            <p class="muted">
+                دامنه نهایی: <a href="{{ report.root_url }}" target="_blank" rel="noopener noreferrer">{{ report.root_url }}</a>
+                — مدت اجرا: {{ report.elapsed_ms }} میلی‌ثانیه
+            </p>
+
+            {% if report.truncated %}
+                <div class="alert alert-warning">
+                    تعداد URLهای کشف‌شده بیشتر از سقف {{ report.max_pages }} صفحه بود؛ گزارش محدود شده است.
+                </div>
+            {% endif %}
+
+            <div class="cards">
+                <div class="card"><strong>{{ report.summary.pages_checked }}</strong><span>صفحه بررسی‌شده</span></div>
+                <div class="card"><strong>{{ report.summary.not_found_links }}</strong><span>لینک 404</span></div>
+                <div class="card"><strong>{{ report.summary.http_errors }}</strong><span>خطای HTTP</span></div>
+                <div class="card"><strong>{{ report.summary.pages_without_h1 }}</strong><span>بدون H1</span></div>
+                <div class="card"><strong>{{ report.summary.pages_without_title }}</strong><span>بدون Title</span></div>
+                <div class="card"><strong>{{ report.summary.pages_without_meta }}</strong><span>بدون Meta Description</span></div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>URL</th>
+                        <th>Title</th>
+                        <th>H1</th>
+                        <th>Meta</th>
+                        <th>مشکلات</th>
+                        <th>کشف‌شده در</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for page in report.pages %}
+                        <tr>
+                            <td>
+                                {% if page.status_code is none %}
+                                    <span class="badge badge-error">Error</span>
+                                {% elif page.status_code >= 400 %}
+                                    <span class="badge badge-error">{{ page.status_code }}</span>
+                                {% else %}
+                                    <span class="badge badge-ok">{{ page.status_code }}</span>
+                                {% endif %}
+                                {% if page.response_time_ms is not none %}
+                                    <div class="muted">{{ page.response_time_ms }} ms</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ page.url }}" target="_blank" rel="noopener noreferrer">{{ page.url }}</a>
+                                {% if page.error %}<div class="muted">{{ page.error }}</div>{% endif %}
+                            </td>
+                            <td>{{ page.title or "—" }}</td>
+                            <td>{{ page.h1_count }}</td>
+                            <td>
+                                {% if page.meta_description %}
+                                    {{ page.meta_description[:110] }}{% if page.meta_description|length > 110 %}…{% endif %}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td>
+                                {% if page.issues %}
+                                    {% for issue in page.issues %}<span class="badge badge-warning">{{ issue }}</span>{% endfor %}
+                                {% else %}
+                                    <span class="badge badge-ok">موردی پیدا نشد</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if page.sources %}
+                                    {% for source in page.sources[:2] %}<div class="muted">{{ source }}</div>{% endfor %}
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+
+    {% if history %}
+        <section class="panel">
+            <h2>آخرین بررسی‌ها</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>زمان</th><th>URL</th><th>صفحات</th><th>404</th><th>بدون H1</th><th>کل مشکلات</th><th>مدت</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in history %}
+                        <tr>
+                            <td>{{ item.created_at }}</td>
+                            <td>{{ item.target_url }}</td>
+                            <td>{{ item.pages_checked }}</td>
+                            <td>{{ item.not_found_links }}</td>
+                            <td>{{ item.pages_without_h1 }}</td>
+                            <td>{{ item.total_issues }}</td>
+                            <td>{{ item.elapsed_ms }} ms</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+</main>
+</body>
+</html>

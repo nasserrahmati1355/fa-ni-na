@@ -7,9 +7,10 @@
 
 .env
 .env.*
+!/.env.example
 
 secrets/
-nginx/
+certificates/
 
 *.md
 build_log.txt
@@ -18,3 +19,5 @@ test_results.txt
 
 docker-compose.yml
 compose.yaml
+
+tests/

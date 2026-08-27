@@ -1,117 +1,89 @@
-# version: "3.8"
-
 services:
   db:
     image: "${MARIADB_IMAGE:-mariadb:10.11.18-jammy}"
     restart: unless-stopped
-
     environment:
       MARIADB_DATABASE: "${MARIADB_DATABASE:-example}"
       MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db-password
-
     secrets:
       - db-password
-
     volumes:
       - db-data:/var/lib/mysql
-
     expose:
       - "3306"
-
     networks:
       - backnet
-
     healthcheck:
-      test:
-        - CMD
-        - healthcheck.sh
-        - --connect
-        - --innodb_initialized
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 30s
 
-
   backend:
-    image: nginx-flask-mysql-backend:1.0
-
+    image: nginx-flask-mysql-backend:1.1
     build:
       context: .
       dockerfile: Dockerfile
       target: runtime
-
     restart: unless-stopped
     init: true
-
+    environment:
+      DB_HOST: db
+      DB_NAME: "${MARIADB_DATABASE:-example}"
+      DB_USER: root
+      DB_PASSWORD_FILE: /run/secrets/db-password
+      SEO_MAX_PAGES: "25"
+      SEO_REQUEST_TIMEOUT_SECONDS: "5"
+      SEO_MAX_RESPONSE_BYTES: "2000000"
     secrets:
       - db-password
-
     expose:
       - "8000"
-
     networks:
       - backnet
       - frontnet
-
     depends_on:
       db:
         condition: service_healthy
-
     healthcheck:
-      test:
-        - CMD
-        - python
-        - -c
-        - import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/", timeout=3).read()
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
 
-
   proxy:
     image: "${NGINX_IMAGE:-nginx:1.30.4-alpine}"
     restart: unless-stopped
     init: true
-
     ports:
       - "${HTTP_PORT:-8080}:80"
-
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-
     networks:
       - frontnet
-
     depends_on:
       backend:
         condition: service_healthy
-
     healthcheck:
-      test:
-        - CMD-SHELL
-        - wget -q -O /dev/null http://127.0.0.1/ || exit 1
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/nginx-health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
-
 volumes:
   db-data:
     driver: local
-
 
 secrets:
   db-password:
     file: ./secrets/db_password.txt
 
-
 networks:
   backnet:
     driver: bridge
     internal: true
-
   frontnet:
     driver: bridge

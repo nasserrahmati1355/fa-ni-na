@@ -7,9 +7,9 @@ source_dir: "{{ playbook_dir }}/../04_docker"
 compose_file_name: docker-compose.yml
 compose_env_file: .env
 compose_project_name: nginx-flask-mysql
-compose_wait_timeout: 180
+compose_wait_timeout: 300
 
-backend_image: nginx-flask-mysql-backend:1.0
+backend_image: nginx-flask-mysql-backend:1.1
 mariadb_image: mariadb:10.11.18-jammy
 nginx_image: nginx:1.30.4-alpine
 mariadb_database: example
@@ -20,3 +20,9 @@ https_port: 443
 secret_group: appcontainer
 secret_gid: 10001
 backend_runtime_gid: 10001
+
+seo_max_pages: 25
+seo_request_timeout_seconds: 5
+seo_max_response_bytes: 2000000
+seo_crawl_delay_seconds: 0.15
+seo_max_redirects: 5
