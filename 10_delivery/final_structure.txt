@@ -2,7 +2,7 @@
 Final Project Structure
 ========================================
 
-Generated at: 2026-08-21T23:53:16+03:30
+Generated at: 2026-08-27T10:20:59+03:30
 
 Excluded from this report:
 - .git metadata
@@ -38,7 +38,10 @@ Excluded from this report:
 │   ├── Dockerfile
 │   ├── app
 │   │   ├── hello.py
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   ├── seo_auditor.py
+│   │   └── templates
+│   │       └── index.html
 │   ├── build_log.txt
 │   ├── compose_explanation.md
 │   ├── container_status.txt
@@ -48,7 +51,9 @@ Excluded from this report:
 │   │   └── default.conf
 │   ├── secrets
 │   │   └── .gitkeep
-│   └── test_results.txt
+│   ├── test_results.txt
+│   └── tests
+│       └── test_seo_auditor.py
 ├── 05_deployment
 │   ├── collect_results.yml
 │   ├── container_logs.txt
@@ -106,4 +111,4 @@ Excluded from this report:
 │   └── team_contribution.md
 └── README.md
 
-14 directories, 79 files
+16 directories, 82 files
