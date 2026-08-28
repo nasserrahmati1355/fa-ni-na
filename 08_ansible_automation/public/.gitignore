@@ -1,0 +1,3 @@
+.secrets/
+generated_basic_auth_credentials.txt
+playbook_output_public.txt

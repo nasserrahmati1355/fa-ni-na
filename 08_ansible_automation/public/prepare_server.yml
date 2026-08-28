@@ -1,0 +1,142 @@
+---
+- name: Prepare the public Ubuntu origin server
+  hosts: public_servers
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - vars/public.yml
+
+  vars:
+    docker_architecture_map:
+      x86_64: amd64
+      aarch64: arm64
+      armv7l: armhf
+    docker_apt_arch: >-
+      {{
+        docker_architecture_map.get(
+          ansible_facts["architecture"],
+          ansible_facts["architecture"]
+        )
+      }}
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+          - ufw
+          - gnupg
+          - openssl
+          - python3
+          - python3-passlib
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Create the APT keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Download the official Docker repository key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        owner: root
+        group: root
+        mode: "0644"
+        force: true
+
+    - name: Configure the official Docker APT repository
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/docker.sources
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: {{ ansible_facts["distribution_release"] }}
+          Components: stable
+          Architectures: {{ docker_apt_arch }}
+          Signed-By: /etc/apt/keyrings/docker.asc
+
+    - name: Install or update Docker Engine and Compose
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: latest
+        update_cache: true
+
+    - name: Enable and start Docker services
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - containerd
+        - docker
+
+    - name: Add the deployment user to the Docker group
+      ansible.builtin.user:
+        name: "{{ deployment_user }}"
+        groups:
+          - docker
+        append: true
+
+    - name: Allow SSH through UFW
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+        comment: SSH
+
+    - name: Allow ArvanCloud origin HTTP through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ origin_http_port | string }}"
+        proto: tcp
+        comment: ArvanCloud origin HTTP
+
+    - name: Set the default incoming policy
+      community.general.ufw:
+        direction: incoming
+        default: deny
+
+    - name: Set the default outgoing policy
+      community.general.ufw:
+        direction: outgoing
+        default: allow
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        logging: low
+
+    - name: Read the installed Docker Compose version
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - version
+      register: docker_compose_version
+      changed_when: false
+
+    - name: Display Docker versions
+      ansible.builtin.debug:
+        msg:
+          - "Docker service is active."
+          - "{{ docker_compose_version.stdout }}"

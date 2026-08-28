@@ -1,0 +1,5 @@
+---
+- ansible.builtin.import_playbook: preflight.yml
+- ansible.builtin.import_playbook: prepare_server.yml
+- ansible.builtin.import_playbook: deploy_public.yml
+- ansible.builtin.import_playbook: verify_public.yml

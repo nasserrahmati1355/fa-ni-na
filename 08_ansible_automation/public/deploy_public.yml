@@ -1,0 +1,489 @@
+---
+- name: Deploy the SEO Auditor origin behind ArvanCloud
+  hosts: public_servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - vars/public.yml
+
+  tasks:
+    - name: Fetch the current ArvanCloud edge IP list
+      ansible.builtin.uri:
+        url: "{{ arvan_ip_list_url }}"
+        method: GET
+        return_content: true
+        status_code: 200
+        timeout: 20
+      register: arvan_ip_list_response
+      failed_when: false
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Parse the current ArvanCloud CIDR list
+      ansible.builtin.set_fact:
+        arvan_cdn_cidrs: >-
+          {{
+            arvan_ip_list_response.content
+            | regex_findall('(?m)^[0-9A-Fa-f:.]+/[0-9]+$')
+            | unique
+            | list
+          }}
+      when:
+        - arvan_ip_list_response.status | default(0) == 200
+
+    - name: Use the bundled ArvanCloud CIDR fallback list
+      ansible.builtin.set_fact:
+        arvan_cdn_cidrs: "{{ arvan_cdn_cidrs_fallback }}"
+      when:
+        - arvan_cdn_cidrs is not defined or arvan_cdn_cidrs | length == 0
+
+    - name: Create the local secret directory on the Controller
+      ansible.builtin.file:
+        path: "{{ basic_auth_local_dir }}"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+      when: enable_basic_auth | bool
+
+    - name: Create or retrieve the Basic Auth password on the Controller
+      ansible.builtin.set_fact:
+        basic_auth_password: >-
+          {{
+            lookup(
+              'ansible.builtin.password',
+              basic_auth_password_file
+              + ' length=24 chars=ascii_letters,digits'
+            )
+          }}
+      no_log: true
+      when: enable_basic_auth | bool
+
+    - name: Enforce the local Basic Auth password file permissions
+      ansible.builtin.file:
+        path: "{{ basic_auth_password_file }}"
+        state: file
+        mode: "0600"
+      delegate_to: localhost
+      become: false
+      when: enable_basic_auth | bool
+
+    - name: Create the host group matching the backend GID
+      ansible.builtin.group:
+        name: "{{ secret_group }}"
+        gid: "{{ backend_gid }}"
+        state: present
+
+    - name: Create deployment directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ deployment_dir }}"
+          owner: "{{ deployment_user }}"
+          group: "{{ deployment_group }}"
+          mode: "0755"
+        - path: "{{ deployment_dir }}/app"
+          owner: "{{ deployment_user }}"
+          group: "{{ deployment_group }}"
+          mode: "0755"
+        - path: "{{ deployment_dir }}/app/templates"
+          owner: "{{ deployment_user }}"
+          group: "{{ deployment_group }}"
+          mode: "0755"
+        - path: "{{ deployment_dir }}/nginx"
+          owner: "{{ deployment_user }}"
+          group: "{{ deployment_group }}"
+          mode: "0755"
+        - path: "{{ deployment_dir }}/secrets"
+          owner: root
+          group: "{{ secret_group }}"
+          mode: "0750"
+
+    - name: Copy the Dockerfile and Docker build exclusions
+      ansible.builtin.copy:
+        src: "{{ source_dir }}/{{ item }}"
+        dest: "{{ deployment_dir }}/{{ item }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+      loop:
+        - Dockerfile
+        - .dockerignore
+
+    - name: Copy the SEO Auditor application
+      ansible.builtin.copy:
+        src: "{{ source_dir }}/app/"
+        dest: "{{ deployment_dir }}/app/"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        directory_mode: "0755"
+        mode: preserve
+
+    - name: Render the public environment file
+      ansible.builtin.template:
+        src: templates/app.env.j2
+        dest: "{{ deployment_dir }}/.env"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0640"
+
+    - name: Render the ArvanCloud-aware Docker Compose file
+      ansible.builtin.template:
+        src: templates/docker-compose.arvan.yml.j2
+        dest: "{{ deployment_dir }}/docker-compose.yml"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+
+    - name: Render the trusted ArvanCloud real-IP configuration
+      ansible.builtin.template:
+        src: templates/00-arvan-realip.conf.j2
+        dest: "{{ deployment_dir }}/nginx/00-arvan-realip.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+
+    - name: Render the SEO Auditor Nginx virtual host
+      ansible.builtin.template:
+        src: templates/10-seo-auditor.conf.j2
+        dest: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+
+    - name: Check whether the database password already exists
+      ansible.builtin.stat:
+        path: "{{ deployment_dir }}/secrets/db_password.txt"
+      register: database_password_file
+
+    - name: Generate the database password
+      ansible.builtin.command:
+        argv:
+          - openssl
+          - rand
+          - -hex
+          - "24"
+      register: generated_database_password
+      changed_when: true
+      when: not database_password_file.stat.exists
+      no_log: true
+
+    - name: Write the database password securely
+      ansible.builtin.copy:
+        dest: "{{ deployment_dir }}/secrets/db_password.txt"
+        content: "{{ generated_database_password.stdout }}"
+        owner: root
+        group: "{{ secret_group }}"
+        mode: "0640"
+      when: not database_password_file.stat.exists
+      no_log: true
+
+    - name: Enforce database password ownership and permissions
+      ansible.builtin.file:
+        path: "{{ deployment_dir }}/secrets/db_password.txt"
+        state: file
+        owner: root
+        group: "{{ secret_group }}"
+        mode: "0640"
+
+    - name: Create the Nginx Basic Auth file
+      community.general.htpasswd:
+        path: "{{ deployment_dir }}/nginx/htpasswd"
+        name: "{{ basic_auth_username }}"
+        password: "{{ basic_auth_password }}"
+        crypt_scheme: apr_md5_crypt
+        owner: root
+        group: root
+        mode: "0644"
+        state: present
+      no_log: true
+      when: enable_basic_auth | bool
+
+    - name: Write the generated access credentials on the Controller
+      ansible.builtin.copy:
+        dest: "{{ basic_auth_credentials_file }}"
+        mode: "0600"
+        content: |
+          URL=https://{{ application_domain }}/
+          Username={{ basic_auth_username }}
+          Password={{ basic_auth_password }}
+      delegate_to: localhost
+      become: false
+      no_log: true
+      when: enable_basic_auth | bool
+
+    - name: Check for the bootstrap Nginx Compose project
+      ansible.builtin.stat:
+        path: /opt/bootstrap-nginx/compose.yml
+      register: bootstrap_compose_file
+
+    - name: Stop and remove the bootstrap Nginx Compose project
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - -f
+          - /opt/bootstrap-nginx/compose.yml
+          - down
+          - --remove-orphans
+      when: bootstrap_compose_file.stat.exists
+      changed_when: true
+
+    - name: Check for an unmanaged bootstrap-nginx container
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - bootstrap-nginx
+      register: unmanaged_bootstrap_container
+      failed_when: false
+      changed_when: false
+
+    - name: Remove an unmanaged bootstrap-nginx container
+      ansible.builtin.command:
+        argv:
+          - docker
+          - rm
+          - --force
+          - bootstrap-nginx
+      when: unmanaged_bootstrap_container.rc == 0
+      changed_when: true
+
+    - name: Validate the Docker Compose configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+          - --quiet
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Probe Compose image metadata for stale references
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - images
+          - --format
+          - json
+        chdir: "{{ deployment_dir }}"
+      register: compose_image_probe
+      failed_when: false
+      changed_when: false
+
+    - name: Remove stale Compose containers without deleting volumes
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - down
+          - --remove-orphans
+        chdir: "{{ deployment_dir }}"
+      when:
+        - compose_image_probe.rc != 0
+        - "'No such image' in (compose_image_probe.stderr | default(''))"
+      changed_when: true
+
+    - name: Build and start the public application stack
+      block:
+        - name: Pull the MariaDB and Nginx images
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - pull
+              - db
+              - proxy
+            chdir: "{{ deployment_dir }}"
+          changed_when: true
+
+        - name: Build the SEO Auditor backend image
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - build
+              - --pull
+              - backend
+            chdir: "{{ deployment_dir }}"
+          changed_when: true
+
+        - name: Start the complete stack and wait for health checks
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - up
+              - --detach
+              - --wait
+              - --wait-timeout
+              - "300"
+              - --remove-orphans
+            chdir: "{{ deployment_dir }}"
+          changed_when: true
+
+      rescue:
+        - name: Collect Compose status after a deployment failure
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - ps
+              - --all
+            chdir: "{{ deployment_dir }}"
+          register: failed_compose_status
+          failed_when: false
+          changed_when: false
+
+        - name: Collect Compose logs after a deployment failure
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - logs
+              - --no-color
+              - --tail
+              - "200"
+            chdir: "{{ deployment_dir }}"
+          register: failed_compose_logs
+          failed_when: false
+          changed_when: false
+
+        - name: Display the original deployment failure
+          ansible.builtin.debug:
+            msg:
+              - "Failed task: {{ ansible_failed_task.name | default('unknown') }}"
+              - "Error: {{ ansible_failed_result.msg | default('not available') }}"
+              - "{{ failed_compose_status.stdout | default('') }}"
+              - "{{ failed_compose_logs.stdout | default('') }}"
+
+        - name: Stop after the public deployment failure
+          ansible.builtin.fail:
+            msg: >-
+              Public SEO Auditor deployment failed at task
+              {{ ansible_failed_task.name | default('unknown') }}.
+              See the Compose status and logs above.
+
+    - name: Verify Nginx health from the origin
+      ansible.builtin.uri:
+        url: http://127.0.0.1/nginx-health
+        method: GET
+        headers:
+          Host: "{{ application_domain }}"
+        status_code: 200
+        return_content: true
+      register: nginx_health_test
+
+    - name: Verify backend health through Nginx
+      ansible.builtin.uri:
+        url: http://127.0.0.1/health
+        method: GET
+        headers:
+          Host: "{{ application_domain }}"
+        status_code: 200
+        return_content: true
+      register: backend_health_test
+
+    - name: Verify the SEO Auditor interface with Basic Auth
+      ansible.builtin.uri:
+        url: http://127.0.0.1/
+        method: GET
+        headers:
+          Host: "{{ application_domain }}"
+        url_username: "{{ basic_auth_username }}"
+        url_password: "{{ basic_auth_password }}"
+        force_basic_auth: true
+        status_code: 200
+        return_content: true
+      register: seo_interface_auth_test
+      no_log: true
+      when: enable_basic_auth | bool
+
+    - name: Verify the SEO Auditor interface without Basic Auth
+      ansible.builtin.uri:
+        url: http://127.0.0.1/
+        method: GET
+        headers:
+          Host: "{{ application_domain }}"
+        status_code: 200
+        return_content: true
+      register: seo_interface_noauth_test
+      when: not enable_basic_auth | bool
+
+    - name: Select the SEO interface verification content
+      ansible.builtin.set_fact:
+        seo_interface_content: >-
+          {{
+            (seo_interface_auth_test.content | default(''))
+            if (enable_basic_auth | bool)
+            else (seo_interface_noauth_test.content | default(''))
+          }}
+      no_log: true
+
+    - name: Confirm that the SEO Auditor UI is active
+      ansible.builtin.assert:
+        that:
+          - "'SEO Auditor' in seo_interface_content"
+        fail_msg: "The origin response does not contain the SEO Auditor UI."
+        success_msg: "The SEO Auditor origin is active."
+
+    - name: Read the final Compose service status
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - ps
+          - --all
+        chdir: "{{ deployment_dir }}"
+      register: compose_status
+      changed_when: false
+
+    - name: Display the public deployment result
+      ansible.builtin.debug:
+        msg:
+          - "Nginx health: {{ nginx_health_test.status }}"
+          - "Backend health: {{ backend_health_test.status }}"
+          - "{{ compose_status.stdout }}"

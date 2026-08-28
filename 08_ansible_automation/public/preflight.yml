@@ -1,0 +1,140 @@
+---
+- name: Preflight checks for the ArvanCloud public deployment
+  hosts: public_servers
+  gather_facts: true
+  become: false
+
+  vars_files:
+    - vars/public.yml
+
+  tasks:
+    - name: Validate the target operating system
+      ansible.builtin.assert:
+        that:
+          - ansible_facts["distribution"] == "Ubuntu"
+          - ansible_facts["distribution_release"] == "jammy"
+        fail_msg: >-
+          This automation is prepared for Ubuntu 22.04 LTS (Jammy).
+          Detected {{ ansible_facts["distribution"] }}
+          {{ ansible_facts["distribution_version"] }}.
+        success_msg: "Ubuntu 22.04 LTS (Jammy) detected."
+
+    - name: Validate the selected ArvanCloud origin mode
+      ansible.builtin.assert:
+        that:
+          - arvan_origin_protocol == "http"
+          - origin_http_port | int == 80
+        fail_msg: >-
+          This package expects ArvanCloud Edge HTTPS with origin protocol HTTP
+          on port 80. Change the ArvanCloud origin setting or use a separate
+          end-to-end TLS package.
+
+    - name: Check required SEO Auditor source files on the Controller
+      ansible.builtin.stat:
+        path: "{{ source_dir }}/{{ item }}"
+      loop:
+        - Dockerfile
+        - .dockerignore
+        - app/hello.py
+        - app/seo_auditor.py
+        - app/requirements.txt
+        - app/templates/index.html
+      register: source_file_checks
+      delegate_to: localhost
+
+    - name: Stop when a required source file is missing
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists | default(false)
+          - item.stat.isreg | default(false)
+        fail_msg: "Required source file is missing: {{ item.item }}"
+      loop: "{{ source_file_checks.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Confirm that SSH on the origin is reachable from the Controller
+      ansible.builtin.wait_for:
+        host: "{{ origin_ip }}"
+        port: 22
+        timeout: 15
+        state: started
+      delegate_to: localhost
+
+    - name: Resolve the public domain from the Controller
+      ansible.builtin.command:
+        argv:
+          - getent
+          - ahostsv4
+          - "{{ application_domain }}"
+      register: public_domain_resolution
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Confirm that the public domain resolves
+      ansible.builtin.assert:
+        that:
+          - public_domain_resolution.stdout | trim | length > 0
+        fail_msg: "The public domain {{ application_domain }} does not resolve."
+
+    - name: Fetch the current ArvanCloud edge IP list
+      ansible.builtin.uri:
+        url: "{{ arvan_ip_list_url }}"
+        method: GET
+        return_content: true
+        status_code: 200
+        timeout: 20
+      register: arvan_ip_list_response
+      failed_when: false
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Parse the current ArvanCloud CIDR list
+      ansible.builtin.set_fact:
+        arvan_cdn_cidrs: >-
+          {{
+            arvan_ip_list_response.content
+            | regex_findall('(?m)^[0-9A-Fa-f:.]+/[0-9]+$')
+            | unique
+            | list
+          }}
+      when:
+        - arvan_ip_list_response.status | default(0) == 200
+
+    - name: Use the bundled ArvanCloud CIDR fallback list
+      ansible.builtin.set_fact:
+        arvan_cdn_cidrs: "{{ arvan_cdn_cidrs_fallback }}"
+      when:
+        - arvan_cdn_cidrs is not defined or arvan_cdn_cidrs | length == 0
+
+    - name: Probe the public ArvanCloud endpoint
+      ansible.builtin.uri:
+        url: "https://{{ application_domain }}/"
+        method: GET
+        validate_certs: true
+        follow_redirects: safe
+        return_content: false
+        status_code:
+          - 200
+          - 301
+          - 302
+          - 401
+          - 403
+          - 404
+          - 502
+          - 503
+        timeout: 20
+      register: arvan_public_probe
+      failed_when: false
+      changed_when: false
+      delegate_to: localhost
+
+    - name: Display preflight information
+      ansible.builtin.debug:
+        msg:
+          - "Origin: {{ origin_ip }}:{{ origin_http_port }}"
+          - "Public domain: {{ application_domain }}"
+          - "Public DNS result: {{ public_domain_resolution.stdout_lines }}"
+          - "ArvanCloud CIDRs loaded: {{ arvan_cdn_cidrs | length }}"
+          - >-
+            Current public HTTP result:
+            {{ arvan_public_probe.status | default('unavailable') }}
