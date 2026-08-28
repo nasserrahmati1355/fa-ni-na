@@ -2,7 +2,7 @@
 Final Project Structure
 ========================================
 
-Generated at: 2026-08-27T10:20:59+03:30
+Generated at: 2026-08-28T23:00:03+03:30
 
 Excluded from this report:
 - .git metadata
@@ -13,6 +13,11 @@ Excluded from this report:
 
 .
 ├── .gitignore
+├── .patch-backups
+│   └── arvan-public-20260828-184357
+│       └── 02_ansible_setup
+│           └── inventories
+│               └── public.ini
 ├── 01_environment
 │   ├── server_connection.txt
 │   ├── server_info.md
@@ -21,13 +26,21 @@ Excluded from this report:
 │   ├── README.md
 │   ├── ansible.cfg
 │   ├── facts.txt
+│   ├── facts_public.txt
+│   ├── inventories
+│   │   ├── lab.ini
+│   │   └── public.ini
 │   ├── inventory
 │   ├── ping_test.txt
+│   ├── ping_test_public.txt
 │   ├── playbook_output.txt
+│   ├── playbook_output_public.txt
 │   ├── requirements.yml
 │   ├── server_setup.yml
+│   ├── start_public_web.yml
 │   ├── verification.txt
-│   └── verification.yml
+│   ├── verification.yml
+│   └── verification_public.txt
 ├── 03_project_clone
 │   ├── project_info.md
 │   └── project_structure.txt
@@ -85,9 +98,33 @@ Excluded from this report:
 │   ├── automation_design.md
 │   ├── deploy_app.yml
 │   ├── deploy_nginx.yml
+│   ├── deploy_public_http.yml
 │   ├── nginx_vars.yml
 │   ├── playbook_output.txt
 │   ├── playbook_output_failed_compose_5.4.0.txt
+│   ├── playbook_output_public_http.txt
+│   ├── public
+│   │   ├── .gitignore
+│   │   ├── .secrets
+│   │   │   └── basic_auth_password
+│   │   ├── deploy_public.yml
+│   │   ├── generated_basic_auth_credentials.txt
+│   │   ├── playbook_output_public.txt
+│   │   ├── playbook_output_public_failed_register.txt
+│   │   ├── preflight.yml
+│   │   ├── prepare_server.yml
+│   │   ├── requirements.yml
+│   │   ├── run_public_automation.sh
+│   │   ├── site_public.yml
+│   │   ├── templates
+│   │   │   ├── 00-arvan-realip.conf.j2
+│   │   │   ├── 10-seo-auditor.conf.j2
+│   │   │   ├── app.env.j2
+│   │   │   └── docker-compose.arvan.yml.j2
+│   │   ├── vars
+│   │   │   └── public.yml
+│   │   ├── verification_public.txt
+│   │   └── verify_public.yml
 │   ├── requirements.yml
 │   ├── run_automation.sh
 │   ├── site.yml
@@ -100,6 +137,8 @@ Excluded from this report:
 ├── 09_documentation
 │   ├── architecture.md
 │   ├── deployment_guide.md
+│   ├── features
+│   │   └── seo_auditor.md
 │   └── troubleshooting.md
 ├── 10_delivery
 │   ├── README.md
@@ -111,4 +150,4 @@ Excluded from this report:
 │   └── team_contribution.md
 └── README.md
 
-16 directories, 82 files
+26 directories, 111 files

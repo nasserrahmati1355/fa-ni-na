@@ -2,9 +2,12 @@
 Git History
 ========================================
 
-Generated at: 2026-08-27T10:20:59+03:30
+Generated at: 2026-08-28T23:00:03+03:30
 
-*   b4dbad7 (HEAD -> main, origin/main) merge: add SEO auditor feature
+* 749343f (HEAD -> main, origin/main) feat(deploy): deploy SEO auditor behind ArvanCloud
+* 6605fbe docs(app): add SEO auditor feature guide
+* 0a73e64 docs(delivery): refresh history after SEO feature
+*   b4dbad7 merge: add SEO auditor feature
 |\  
 | * 72c4064 (origin/feature/seo-auditor, feature/seo-auditor) feat(app): add limited SEO audit crawler
 |/  
