@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -eu
+
+cd {{ deployment_dir }}
+
+/usr/bin/docker compose \
+  --env-file .env \
+  -f docker-compose.yml \
+  exec -T proxy nginx -t
+
+/usr/bin/docker compose \
+  --env-file .env \
+  -f docker-compose.yml \
+  exec -T proxy nginx -s reload

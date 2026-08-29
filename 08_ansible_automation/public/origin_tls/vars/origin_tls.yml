@@ -1,0 +1,36 @@
+---
+# Public certificate for the Origin server
+letsencrypt_email: nsrrhmti@gmail.com
+letsencrypt_certificate_name: nhref.ir
+letsencrypt_webroot: "{{ deployment_dir }}/certbot/www"
+letsencrypt_live_dir: >-
+  /etc/letsencrypt/live/{{ letsencrypt_certificate_name }}
+letsencrypt_fullchain_path: >-
+  {{ letsencrypt_live_dir }}/fullchain.pem
+letsencrypt_private_key_path: >-
+  {{ letsencrypt_live_dir }}/privkey.pem
+
+# Use the production ACME endpoint.
+# Set to true only while troubleshooting repeated issuance failures.
+letsencrypt_staging: false
+
+# Run Certbot's renewal simulation after installation.
+run_certbot_renewal_dry_run: true
+
+# Origin TLS
+origin_https_port: 443
+origin_tls_health_path: /origin-tls-health
+
+# These values override path expressions from public.yml because this
+# playbook lives one directory deeper than the other public playbooks.
+public_automation_dir: "{{ playbook_dir }}/.."
+basic_auth_local_dir: "{{ public_automation_dir }}/.secrets"
+basic_auth_password_file: >-
+  {{ basic_auth_local_dir }}/basic_auth_password
+basic_auth_credentials_file: >-
+  {{ public_automation_dir }}/generated_basic_auth_credentials.txt
+
+origin_tls_output_file: >-
+  {{ playbook_dir }}/origin_tls_enable_report.txt
+origin_tls_verification_file: >-
+  {{ playbook_dir }}/origin_tls_verification.txt

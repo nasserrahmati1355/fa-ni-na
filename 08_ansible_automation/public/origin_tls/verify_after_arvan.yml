@@ -1,0 +1,333 @@
+---
+- name: Verify ArvanCloud to Origin HTTPS
+  hosts: public_servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../vars/public.yml
+    - vars/origin_tls.yml
+
+  tasks:
+    - name: Retrieve the existing Basic Auth password
+      ansible.builtin.set_fact:
+        basic_auth_password: >-
+          {{
+            lookup(
+              'ansible.builtin.password',
+              basic_auth_password_file
+            )
+          }}
+      no_log: true
+      when: enable_basic_auth | bool
+
+    - name: Validate the active Compose configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+          - --quiet
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Read the Compose service status
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - ps
+          - --all
+        chdir: "{{ deployment_dir }}"
+      register: compose_status
+      changed_when: false
+
+    - name: Test the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      register: nginx_config_test
+      changed_when: false
+
+    - name: Verify direct Origin HTTPS
+      ansible.builtin.command:
+        argv:
+          - curl
+          - --silent
+          - --show-error
+          - --fail-with-body
+          - --resolve
+          - "{{ application_domain }}:{{ origin_https_port }}:{{ origin_ip }}"
+          - --user
+          - "{{ basic_auth_username }}:{{ basic_auth_password }}"
+          - "https://{{ application_domain }}/"
+      register: direct_origin_application_auth
+      changed_when: false
+      no_log: true
+      delegate_to: localhost
+      become: false
+      when: enable_basic_auth | bool
+
+    - name: Verify direct Origin HTTPS without Basic Auth
+      ansible.builtin.command:
+        argv:
+          - curl
+          - --silent
+          - --show-error
+          - --fail-with-body
+          - --resolve
+          - "{{ application_domain }}:{{ origin_https_port }}:{{ origin_ip }}"
+          - "https://{{ application_domain }}/"
+      register: direct_origin_application_noauth
+      changed_when: false
+      delegate_to: localhost
+      become: false
+      when: not enable_basic_auth | bool
+
+    - name: Select the direct Origin application response
+      ansible.builtin.set_fact:
+        direct_origin_application_content: >-
+          {{
+            (direct_origin_application_auth.stdout | default(''))
+            if (enable_basic_auth | bool)
+            else (direct_origin_application_noauth.stdout | default(''))
+          }}
+      no_log: true
+
+    - name: Verify the Origin-only TLS health endpoint through ArvanCloud
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}{{ origin_tls_health_path }}?check={{
+            lookup('ansible.builtin.pipe', 'date +%s')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 45
+      register: public_origin_tls_health
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm that ArvanCloud reached the HTTPS Origin server block
+      ansible.builtin.assert:
+        that:
+          - public_origin_tls_health.content | trim == "origin-tls-ok"
+        fail_msg: >-
+          The public endpoint did not return the HTTPS-Origin marker.
+          Confirm that the ArvanCloud Origin protocol is HTTPS and the Origin
+          port is 443.
+        success_msg: "ArvanCloud is reaching the Origin through HTTPS."
+
+    - name: Test the protected public SEO Auditor through ArvanCloud
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}/?origin_tls_check={{
+            lookup('ansible.builtin.pipe', 'date +%s')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        url_username: "{{ basic_auth_username }}"
+        url_password: "{{ basic_auth_password }}"
+        force_basic_auth: true
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 60
+      register: public_application_auth_test
+      no_log: true
+      delegate_to: localhost
+      become: false
+      when: enable_basic_auth | bool
+
+    - name: Test the public SEO Auditor without Basic Auth
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}/?origin_tls_check={{
+            lookup('ansible.builtin.pipe', 'date +%s')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 60
+      register: public_application_noauth_test
+      delegate_to: localhost
+      become: false
+      when: not enable_basic_auth | bool
+
+    - name: Select the public application response
+      ansible.builtin.set_fact:
+        public_application_content: >-
+          {{
+            (public_application_auth_test.content | default(''))
+            if (enable_basic_auth | bool)
+            else (public_application_noauth_test.content | default(''))
+          }}
+      no_log: true
+
+    - name: Confirm the public SEO Auditor UI
+      ansible.builtin.assert:
+        that:
+          - "'SEO Auditor' in public_application_content"
+          - "'SEO Auditor' in direct_origin_application_content"
+        fail_msg: "The SEO Auditor UI was not returned by both TLS paths."
+
+    - name: Read the Origin certificate
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -o pipefail
+          printf '' |
+          openssl s_client \
+            -connect {{ origin_ip }}:{{ origin_https_port }} \
+            -servername {{ application_domain }} \
+            -verify_hostname {{ application_domain }} \
+            2>/dev/null |
+          openssl x509 \
+            -noout \
+            -subject \
+            -issuer \
+            -serial \
+            -dates \
+            -fingerprint \
+            -sha256 \
+            -ext subjectAltName
+      register: origin_certificate
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Read the ArvanCloud Edge certificate
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -o pipefail
+          printf '' |
+          openssl s_client \
+            -connect {{ application_domain }}:443 \
+            -servername {{ application_domain }} \
+            2>/dev/null |
+          openssl x509 \
+            -noout \
+            -subject \
+            -issuer \
+            -serial \
+            -dates \
+            -fingerprint \
+            -sha256
+      register: edge_certificate
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Write the Origin TLS verification report
+      ansible.builtin.copy:
+        dest: "{{ origin_tls_verification_file }}"
+        mode: "0644"
+        content: |
+          ========================================
+          ArvanCloud End-to-End TLS Verification
+          ========================================
+
+          Generated at:
+          {{ lookup('ansible.builtin.pipe', 'date --iso-8601=seconds') }}
+
+          Domain:
+          {{ application_domain }}
+
+          Origin:
+          {{ origin_ip }}:{{ origin_https_port }}
+
+          ----------------------------------------
+          Docker Compose Status
+          ----------------------------------------
+
+          {{ compose_status.stdout }}
+
+          ----------------------------------------
+          Nginx Configuration Test
+          ----------------------------------------
+
+          {{ nginx_config_test.stdout | default('') }}
+          {{ nginx_config_test.stderr | default('') }}
+
+          ----------------------------------------
+          Direct Origin HTTPS
+          ----------------------------------------
+
+          SEO Auditor response: PASSED
+
+          ----------------------------------------
+          ArvanCloud to Origin HTTPS
+          ----------------------------------------
+
+          Origin-only TLS marker:
+          {{ public_origin_tls_health.content | trim }}
+
+          Public SEO Auditor response:
+          PASSED
+
+          ----------------------------------------
+          Origin Certificate
+          ----------------------------------------
+
+          {{ origin_certificate.stdout }}
+
+          ----------------------------------------
+          ArvanCloud Edge Certificate
+          ----------------------------------------
+
+          {{ edge_certificate.stdout }}
+
+          ----------------------------------------
+          Final Result
+          ----------------------------------------
+
+          Direct Origin HTTPS: PASSED
+          ArvanCloud HTTPS Origin connection: PASSED
+          Public SEO Auditor HTTPS: PASSED
+
+          Overall end-to-end TLS verification: PASSED
+      delegate_to: localhost
+      become: false
+
+    - name: Display the final end-to-end TLS result
+      ansible.builtin.debug:
+        msg:
+          - "ArvanCloud is using HTTPS to reach the Origin."
+          - "Report: {{ origin_tls_verification_file }}"
+          - "Overall end-to-end TLS verification: PASSED"

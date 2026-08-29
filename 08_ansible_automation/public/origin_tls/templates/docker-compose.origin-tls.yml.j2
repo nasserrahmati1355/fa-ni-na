@@ -1,0 +1,111 @@
+services:
+  db:
+    image: "${MARIADB_IMAGE}"
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: "${MARIADB_DATABASE}"
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db-password
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/mysql
+    expose:
+      - "3306"
+    networks:
+      - backnet
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    image: "${BACKEND_IMAGE}"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    init: true
+    environment:
+      DB_HOST: db
+      DB_NAME: "${MARIADB_DATABASE}"
+      DB_USER: root
+      DB_PASSWORD_FILE: /run/secrets/db-password
+      SEO_MAX_PAGES: "${SEO_MAX_PAGES}"
+      SEO_REQUEST_TIMEOUT_SECONDS: "${SEO_REQUEST_TIMEOUT_SECONDS}"
+      SEO_MAX_RESPONSE_BYTES: "${SEO_MAX_RESPONSE_BYTES}"
+      SEO_MAX_REDIRECTS: "${SEO_MAX_REDIRECTS}"
+      SEO_CRAWL_DELAY_SECONDS: "${SEO_CRAWL_DELAY_SECONDS}"
+      SEO_USER_AGENT: "${SEO_USER_AGENT}"
+    secrets:
+      - db-password
+    expose:
+      - "8000"
+    networks:
+      - backnet
+      - frontnet
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen(
+          'http://127.0.0.1:8000/health', timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  proxy:
+    image: "${NGINX_IMAGE}"
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${HTTP_PORT}:80"
+      - "{{ origin_https_port }}:443"
+    volumes:
+      - ./nginx/00-arvan-realip.conf:/etc/nginx/conf.d/00-arvan-realip.conf:ro
+      - ./nginx/10-seo-auditor.conf:/etc/nginx/conf.d/default.conf:ro
+{% if enable_basic_auth %}
+      - ./nginx/htpasswd:/etc/nginx/auth/htpasswd:ro
+{% endif %}
+      - ./certbot/www:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - frontnet
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget -q -O /dev/null
+          --header='Host: {{ application_domain }}'
+          http://127.0.0.1/nginx-health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  db-data:
+    driver: local
+
+secrets:
+  db-password:
+    file: ./secrets/db_password.txt
+
+networks:
+  backnet:
+    driver: bridge
+    internal: true
+  frontnet:
+    driver: bridge

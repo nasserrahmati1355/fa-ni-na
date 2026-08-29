@@ -1,0 +1,629 @@
+---
+- name: Enable trusted HTTPS on the SEO Auditor Origin
+  hosts: public_servers
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - ../vars/public.yml
+    - vars/origin_tls.yml
+
+  vars:
+    certbot_base_argv:
+      - /snap/bin/certbot
+      - certonly
+      - --webroot
+      - --webroot-path
+      - "{{ letsencrypt_webroot }}"
+      - --cert-name
+      - "{{ letsencrypt_certificate_name }}"
+      - --domain
+      - "{{ application_domain }}"
+      - --email
+      - "{{ letsencrypt_email }}"
+      - --agree-tos
+      - --non-interactive
+      - --no-eff-email
+      - --keep-until-expiring
+      - --preferred-challenges
+      - http
+      - --key-type
+      - rsa
+      - --rsa-key-size
+      - "2048"
+
+  pre_tasks:
+    - name: Confirm that the public deployment exists
+      ansible.builtin.stat:
+        path: "{{ deployment_dir }}/docker-compose.yml"
+      register: deployed_compose_file
+
+    - name: Stop when the SEO Auditor is not deployed
+      ansible.builtin.assert:
+        that:
+          - deployed_compose_file.stat.exists
+        fail_msg: >-
+          {{ deployment_dir }}/docker-compose.yml was not found.
+          Deploy the public SEO Auditor before enabling Origin TLS.
+
+    - name: Confirm the expected domain
+      ansible.builtin.assert:
+        that:
+          - application_domain == letsencrypt_certificate_name
+        fail_msg: >-
+          application_domain and letsencrypt_certificate_name must match.
+          application_domain={{ application_domain }},
+          letsencrypt_certificate_name={{ letsencrypt_certificate_name }}.
+
+    - name: Confirm ArvanCloud still uses HTTP during certificate bootstrap
+      ansible.builtin.assert:
+        that:
+          - arvan_origin_protocol == "http"
+          - origin_http_port | int == 80
+        fail_msg: >-
+          Keep the ArvanCloud Origin protocol on HTTP port 80 until this
+          playbook finishes and direct Origin HTTPS has been verified.
+
+    - name: Verify the existing Origin HTTP health endpoint
+      ansible.builtin.uri:
+        url: http://127.0.0.1/nginx-health
+        method: GET
+        headers:
+          Host: "{{ application_domain }}"
+        status_code: 200
+        return_content: true
+
+  tasks:
+    - name: Install Snap and TLS prerequisites
+      ansible.builtin.apt:
+        name:
+          - snapd
+          - openssl
+          - ca-certificates
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Remove conflicting OS Certbot packages
+      ansible.builtin.apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        state: absent
+
+    - name: Enable and start the Snap socket
+      ansible.builtin.systemd_service:
+        name: snapd.socket
+        enabled: true
+        state: started
+
+    - name: Wait for Snap initialization
+      ansible.builtin.command:
+        argv:
+          - snap
+          - wait
+          - system
+          - seed.loaded
+      register: snap_seed_wait
+      changed_when: false
+      retries: 12
+      delay: 5
+      until: snap_seed_wait.rc == 0
+
+    - name: Install Certbot from the official Snap package
+      community.general.snap:
+        name: certbot
+        classic: true
+        state: present
+
+    - name: Create the conventional Certbot command link
+      ansible.builtin.file:
+        src: /snap/bin/certbot
+        dest: /usr/local/bin/certbot
+        state: link
+        force: true
+
+    - name: Allow HTTPS through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ origin_https_port | string }}"
+        proto: tcp
+        comment: HTTPS for ArvanCloud Origin
+
+    - name: Create ACME and renewal-hook directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ letsencrypt_webroot }}"
+          mode: "0755"
+        - path: "{{ letsencrypt_webroot }}/.well-known"
+          mode: "0755"
+        - path: "{{ letsencrypt_webroot }}/.well-known/acme-challenge"
+          mode: "0755"
+        - path: /etc/letsencrypt
+          mode: "0755"
+        - path: /etc/letsencrypt/renewal-hooks/deploy
+          mode: "0755"
+
+    - name: Render the TLS-capable Docker Compose configuration
+      ansible.builtin.template:
+        src: templates/docker-compose.origin-tls.yml.j2
+        dest: "{{ deployment_dir }}/docker-compose.yml"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Render the temporary HTTP and ACME Nginx configuration
+      ansible.builtin.template:
+        src: templates/10-seo-auditor-acme.conf.j2
+        dest: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Validate the TLS-capable Compose configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+          - --quiet
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Test the temporary Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - run
+          - --rm
+          - --no-deps
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Recreate Nginx with the ACME webroot mounted
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - up
+          - --detach
+          - --force-recreate
+          - --no-deps
+          - proxy
+        chdir: "{{ deployment_dir }}"
+      changed_when: true
+
+    - name: Wait for Origin HTTP
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ origin_http_port }}"
+        state: started
+        timeout: 60
+
+    - name: Generate a unique ACME test token
+      ansible.builtin.set_fact:
+        acme_test_token: >-
+          {{
+            lookup(
+              'ansible.builtin.pipe',
+              'date +%s%N'
+            )
+          }}
+      changed_when: false
+
+    - name: Create a unique ACME path test file
+      ansible.builtin.copy:
+        dest: >-
+          {{ letsencrypt_webroot }}/.well-known/acme-challenge/ansible-{{
+            acme_test_token
+          }}
+        content: "origin-acme-ready-{{ acme_test_token }}\n"
+        owner: root
+        group: root
+        mode: "0644"
+      register: acme_test_file
+
+    - name: Test the ACME path directly on the Origin
+      ansible.builtin.uri:
+        url: >-
+          http://{{ origin_ip }}/.well-known/acme-challenge/{{
+            acme_test_file.dest | basename
+          }}
+        method: GET
+        headers:
+          Host: "{{ application_domain }}"
+        status_code: 200
+        return_content: true
+        timeout: 20
+        use_proxy: false
+      register: direct_acme_test
+      delegate_to: localhost
+      become: false
+
+    - name: Test the ACME path through ArvanCloud
+      ansible.builtin.uri:
+        url: >-
+          http://{{ application_domain }}/.well-known/acme-challenge/{{
+            acme_test_file.dest | basename
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        status_code: 200
+        return_content: true
+        follow_redirects: all
+        validate_certs: true
+        timeout: 30
+        use_proxy: false
+      register: public_acme_test
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm the ACME test content
+      ansible.builtin.assert:
+        that:
+          - >-
+            direct_acme_test.content | trim
+            == "origin-acme-ready-" ~ acme_test_token
+          - >-
+            public_acme_test.content | trim
+            == "origin-acme-ready-" ~ acme_test_token
+        fail_msg: >-
+          The ACME webroot is not consistently reachable from the Origin and
+          ArvanCloud public endpoint.
+
+    - name: Remove the ACME path test file
+      ansible.builtin.file:
+        path: "{{ acme_test_file.dest }}"
+        state: absent
+
+    - name: Request or retain the Let's Encrypt certificate
+      ansible.builtin.command:
+        argv: "{{ certbot_base_argv + (['--staging'] if letsencrypt_staging | bool else []) }}"
+      register: certbot_issue
+      changed_when: >-
+        'Successfully received certificate'
+        in ((certbot_issue.stdout | default(''))
+        ~ (certbot_issue.stderr | default('')))
+
+    - name: Verify the certificate and private key files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+        follow: true
+        get_checksum: false
+        get_mime: false
+      loop:
+        - "{{ letsencrypt_fullchain_path }}"
+        - "{{ letsencrypt_private_key_path }}"
+      register: certificate_files
+
+    - name: Stop when Certbot did not create the required files
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists | default(false)
+          - item.stat.isreg | default(false)
+          - (item.stat.size | default(0) | int) > 0
+        fail_msg: >-
+          Required certificate target is missing, broken, or empty:
+          {{ item.item }}
+      loop: "{{ certificate_files.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Render the final HTTPS Nginx configuration
+      ansible.builtin.template:
+        src: templates/10-seo-auditor-origin-tls.conf.j2
+        dest: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Test the final Nginx TLS configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - run
+          - --rm
+          - --no-deps
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Recreate Nginx with Origin HTTPS enabled
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - up
+          - --detach
+          - --force-recreate
+          - --no-deps
+          - proxy
+        chdir: "{{ deployment_dir }}"
+      changed_when: true
+
+    - name: Wait for Origin HTTPS
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ origin_https_port }}"
+        state: started
+        timeout: 60
+
+    - name: Test the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      register: active_nginx_test
+      changed_when: false
+
+    - name: Retrieve the existing Basic Auth password
+      ansible.builtin.set_fact:
+        basic_auth_password: >-
+          {{
+            lookup(
+              'ansible.builtin.password',
+              basic_auth_password_file
+            )
+          }}
+      no_log: true
+      when: enable_basic_auth | bool
+
+    - name: Verify direct Origin HTTPS without credentials
+      ansible.builtin.command:
+        argv:
+          - curl
+          - --silent
+          - --show-error
+          - --output
+          - /dev/null
+          - --write-out
+          - "%{http_code}"
+          - --resolve
+          - "{{ application_domain }}:{{ origin_https_port }}:{{ origin_ip }}"
+          - "https://{{ application_domain }}/"
+      register: direct_origin_unauthenticated
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm the expected unauthenticated Origin status
+      ansible.builtin.assert:
+        that:
+          - >-
+            direct_origin_unauthenticated.stdout | trim
+            == ('401' if enable_basic_auth | bool else '200')
+        fail_msg: >-
+          Unexpected direct Origin HTTPS status:
+          {{ direct_origin_unauthenticated.stdout | trim }}.
+
+    - name: Verify the protected application over direct Origin HTTPS
+      ansible.builtin.command:
+        argv:
+          - curl
+          - --silent
+          - --show-error
+          - --fail-with-body
+          - --resolve
+          - "{{ application_domain }}:{{ origin_https_port }}:{{ origin_ip }}"
+          - --user
+          - "{{ basic_auth_username }}:{{ basic_auth_password }}"
+          - "https://{{ application_domain }}/"
+      register: direct_origin_application_auth
+      changed_when: false
+      no_log: true
+      delegate_to: localhost
+      become: false
+      when: enable_basic_auth | bool
+
+    - name: Verify the unprotected application over direct Origin HTTPS
+      ansible.builtin.command:
+        argv:
+          - curl
+          - --silent
+          - --show-error
+          - --fail-with-body
+          - --resolve
+          - "{{ application_domain }}:{{ origin_https_port }}:{{ origin_ip }}"
+          - "https://{{ application_domain }}/"
+      register: direct_origin_application_noauth
+      changed_when: false
+      delegate_to: localhost
+      become: false
+      when: not enable_basic_auth | bool
+
+    - name: Select the direct Origin application response
+      ansible.builtin.set_fact:
+        direct_origin_application_content: >-
+          {{
+            (direct_origin_application_auth.stdout | default(''))
+            if (enable_basic_auth | bool)
+            else (direct_origin_application_noauth.stdout | default(''))
+          }}
+      no_log: true
+
+    - name: Confirm the SEO Auditor UI over direct Origin HTTPS
+      ansible.builtin.assert:
+        that:
+          - "'SEO Auditor' in direct_origin_application_content"
+        fail_msg: "Direct Origin HTTPS did not return the SEO Auditor UI."
+
+    - name: Read the certificate served directly by the Origin
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -o pipefail
+          printf '' |
+          openssl s_client \
+            -connect {{ origin_ip }}:{{ origin_https_port }} \
+            -servername {{ application_domain }} \
+            -verify_hostname {{ application_domain }} \
+            2>/dev/null |
+          openssl x509 \
+            -noout \
+            -subject \
+            -issuer \
+            -serial \
+            -dates \
+            -fingerprint \
+            -sha256 \
+            -ext subjectAltName
+      register: origin_certificate_details
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Install the post-renewal Nginx reload hook
+      ansible.builtin.template:
+        src: templates/reload-nginx-after-renew.sh.j2
+        dest: >-
+          /etc/letsencrypt/renewal-hooks/deploy/
+          reload-seo-auditor-nginx.sh
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Enable and start Certbot automatic renewal
+      ansible.builtin.systemd_service:
+        name: snap.certbot.renew.timer
+        enabled: true
+        state: started
+
+    - name: Test Certbot renewal
+      ansible.builtin.command:
+        argv:
+          - /snap/bin/certbot
+          - renew
+          - --dry-run
+          - --no-random-sleep-on-renew
+          - --run-deploy-hooks
+      register: certbot_renewal_test
+      changed_when: false
+      when: run_certbot_renewal_dry_run | bool
+
+    - name: Write the Origin TLS enablement report on the Controller
+      ansible.builtin.copy:
+        dest: "{{ origin_tls_output_file }}"
+        mode: "0644"
+        content: |
+          ========================================
+          Origin TLS Enablement Report
+          ========================================
+
+          Generated at:
+          {{ lookup('ansible.builtin.pipe', 'date --iso-8601=seconds') }}
+
+          Domain:
+          {{ application_domain }}
+
+          Origin:
+          {{ origin_ip }}:{{ origin_https_port }}
+
+          Certificate name:
+          {{ letsencrypt_certificate_name }}
+
+          Certificate:
+          {{ letsencrypt_fullchain_path }}
+
+          Private key:
+          {{ letsencrypt_private_key_path }}
+
+          ----------------------------------------
+          Nginx Configuration Test
+          ----------------------------------------
+
+          {{ active_nginx_test.stdout | default('') }}
+          {{ active_nginx_test.stderr | default('') }}
+
+          ----------------------------------------
+          Direct Origin HTTPS
+          ----------------------------------------
+
+          Unauthenticated status:
+          {{ direct_origin_unauthenticated.stdout | trim }}
+
+          SEO Auditor authenticated test:
+          PASSED
+
+          ----------------------------------------
+          Origin Certificate
+          ----------------------------------------
+
+          {{ origin_certificate_details.stdout }}
+
+          ----------------------------------------
+          Certbot Renewal Dry Run
+          ----------------------------------------
+
+          {% if run_certbot_renewal_dry_run | bool %}
+          {{ certbot_renewal_test.stdout | default('') }}
+          {{ certbot_renewal_test.stderr | default('') }}
+          {% else %}
+          SKIPPED by configuration
+          {% endif %}
+
+          ----------------------------------------
+          Next Manual Step
+          ----------------------------------------
+
+          Change the ArvanCloud Origin protocol to HTTPS and Origin port to 443.
+          Then run site_verify_after_arvan.yml.
+
+          Final result:
+          Direct Origin TLS is ready.
+      delegate_to: localhost
+      become: false
+
+    - name: Display the required ArvanCloud change
+      ansible.builtin.debug:
+        msg:
+          - "Direct Origin HTTPS is ready on {{ origin_ip }}:{{ origin_https_port }}."
+          - "Keep Basic Auth enabled during the authentication migration."
+          - "Now change ArvanCloud Origin Protocol to HTTPS and port to 443."
+          - "Then run origin_tls/site_verify_after_arvan.yml."
