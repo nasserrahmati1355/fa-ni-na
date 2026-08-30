@@ -1,0 +1,48 @@
+---
+# Application source on the AlmaLinux Controller
+app_auth_source_dir: "{{ playbook_dir }}/../../../04_docker"
+
+# Backend image containing Flask-Login and Flask-WTF
+app_auth_backend_image: "{{ backend_image_name }}:1.2"
+
+# Application administrator
+app_admin_username: admin
+app_admin_rotate_password: true
+
+# Secrets kept only on the Controller
+app_auth_local_secret_dir: "{{ playbook_dir }}/.secrets"
+app_admin_password_file: >-
+  {{ app_auth_local_secret_dir }}/app_admin_password
+generated_app_admin_credentials_file: >-
+  {{ playbook_dir }}/generated_app_admin_credentials.txt
+
+# Runtime secrets on the Ubuntu Origin
+flask_secret_key_path: >-
+  {{ deployment_dir }}/secrets/flask_secret_key.txt
+app_admin_password_remote_path: >-
+  {{ deployment_dir }}/secrets/app_admin_password.txt
+
+# Flask session and account-security settings
+session_cookie_secure: true
+session_lifetime_minutes: 480
+trusted_hosts:
+  - "{{ application_domain }}"
+  - localhost
+  - 127.0.0.1
+  - backend
+
+auth_max_failed_attempts: 5
+auth_lockout_minutes: 15
+
+# Existing outer Nginx Basic Authentication remains enabled temporarily.
+public_automation_dir: "{{ playbook_dir }}/.."
+basic_auth_local_dir: "{{ public_automation_dir }}/.secrets"
+basic_auth_password_file: >-
+  {{ basic_auth_local_dir }}/basic_auth_password
+basic_auth_credentials_file: >-
+  {{ public_automation_dir }}/generated_basic_auth_credentials.txt
+
+app_auth_deployment_report: >-
+  {{ playbook_dir }}/app_auth_deployment_report.txt
+app_auth_verification_report: >-
+  {{ playbook_dir }}/app_auth_verification.txt

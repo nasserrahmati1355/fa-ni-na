@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}ورود | SEO Auditor{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <h1>ورود به SEO Auditor</h1>
+        <p>
+            برای مشاهده داشبورد و اجرای بررسی جدید، اطلاعات حساب اپلیکیشن را وارد کنید.
+        </p>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form class="stacked-form" method="post" action="{{ url_for('login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ next_target }}">
+
+            <label>
+                نام کاربری
+                <input
+                    type="text"
+                    name="username"
+                    value="{{ username }}"
+                    maxlength="64"
+                    autocomplete="username"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    required
+                    autofocus
+                >
+            </label>
+
+            <label>
+                رمز عبور
+                <input
+                    type="password"
+                    name="password"
+                    maxlength="256"
+                    autocomplete="current-password"
+                    required
+                >
+            </label>
+
+            <button type="submit">ورود</button>
+        </form>
+
+        <div class="notice">
+            Basic Authentication مربوط به Nginx در این مرحله موقتاً فعال باقی مانده است؛
+            بنابراین ممکن است پیش از نمایش این فرم، مرورگر یک پنجره ورود جداگانه نشان دهد.
+        </div>
+    </div>
+</section>
+{% endblock %}

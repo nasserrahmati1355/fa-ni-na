@@ -11,6 +11,7 @@
 
 secrets/
 certificates/
+certbot/
 
 *.md
 build_log.txt
@@ -21,3 +22,4 @@ docker-compose.yml
 compose.yaml
 
 tests/
+scripts/

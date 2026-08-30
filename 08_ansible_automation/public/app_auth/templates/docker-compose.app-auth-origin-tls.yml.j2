@@ -1,9 +1,9 @@
 services:
   db:
-    image: "${MARIADB_IMAGE:-mariadb:10.11.18-jammy}"
+    image: "{{ mariadb_image }}"
     restart: unless-stopped
     environment:
-      MARIADB_DATABASE: "${MARIADB_DATABASE:-example}"
+      MARIADB_DATABASE: "{{ mariadb_database }}"
       MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db-password
     secrets:
       - db-password
@@ -21,7 +21,7 @@ services:
       start_period: 30s
 
   backend:
-    image: "${BACKEND_IMAGE:-nginx-flask-mysql-backend:1.2}"
+    image: "{{ app_auth_backend_image }}"
     build:
       context: .
       dockerfile: Dockerfile
@@ -30,21 +30,21 @@ services:
     init: true
     environment:
       DB_HOST: db
-      DB_NAME: "${MARIADB_DATABASE:-example}"
+      DB_NAME: "{{ mariadb_database }}"
       DB_USER: root
       DB_PASSWORD_FILE: /run/secrets/db-password
       FLASK_SECRET_KEY_FILE: /run/secrets/flask-secret-key
-      SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-false}"
-      SESSION_LIFETIME_MINUTES: "${SESSION_LIFETIME_MINUTES:-480}"
-      TRUSTED_HOSTS: "${TRUSTED_HOSTS:-localhost,127.0.0.1,backend}"
-      AUTH_MAX_FAILED_ATTEMPTS: "${AUTH_MAX_FAILED_ATTEMPTS:-5}"
-      AUTH_LOCKOUT_MINUTES: "${AUTH_LOCKOUT_MINUTES:-15}"
-      SEO_MAX_PAGES: "${SEO_MAX_PAGES:-25}"
-      SEO_REQUEST_TIMEOUT_SECONDS: "${SEO_REQUEST_TIMEOUT_SECONDS:-5}"
-      SEO_MAX_RESPONSE_BYTES: "${SEO_MAX_RESPONSE_BYTES:-2000000}"
-      SEO_CRAWL_DELAY_SECONDS: "${SEO_CRAWL_DELAY_SECONDS:-0.15}"
-      SEO_MAX_REDIRECTS: "${SEO_MAX_REDIRECTS:-5}"
-      SEO_USER_AGENT: "${SEO_USER_AGENT:-Nhref-SEO-Auditor/1.2}"
+      SESSION_COOKIE_SECURE: "{{ session_cookie_secure | bool | lower }}"
+      SESSION_LIFETIME_MINUTES: "{{ session_lifetime_minutes }}"
+      TRUSTED_HOSTS: "{{ trusted_hosts | join(',') }}"
+      AUTH_MAX_FAILED_ATTEMPTS: "{{ auth_max_failed_attempts }}"
+      AUTH_LOCKOUT_MINUTES: "{{ auth_lockout_minutes }}"
+      SEO_MAX_PAGES: "{{ seo_max_pages }}"
+      SEO_REQUEST_TIMEOUT_SECONDS: "{{ seo_request_timeout_seconds }}"
+      SEO_MAX_RESPONSE_BYTES: "{{ seo_max_response_bytes }}"
+      SEO_MAX_REDIRECTS: "{{ seo_max_redirects }}"
+      SEO_CRAWL_DELAY_SECONDS: "{{ seo_crawl_delay_seconds }}"
+      SEO_USER_AGENT: "Nhref-SEO-Auditor/1.2 (+https://{{ application_domain }}/)"
     secrets:
       - db-password
       - flask-secret-key
@@ -71,7 +71,7 @@ services:
       start_period: 25s
 
   admin-bootstrap:
-    image: "${BACKEND_IMAGE:-nginx-flask-mysql-backend:1.2}"
+    image: "{{ app_auth_backend_image }}"
     profiles:
       - tools
     command:
@@ -79,12 +79,12 @@ services:
       - bootstrap_admin.py
     environment:
       DB_HOST: db
-      DB_NAME: "${MARIADB_DATABASE:-example}"
+      DB_NAME: "{{ mariadb_database }}"
       DB_USER: root
       DB_PASSWORD_FILE: /run/secrets/db-password
-      APP_ADMIN_USERNAME: "${APP_ADMIN_USERNAME:-admin}"
+      APP_ADMIN_USERNAME: "{{ app_admin_username }}"
       APP_ADMIN_PASSWORD_FILE: /run/secrets/app-admin-password
-      APP_ADMIN_ROTATE_PASSWORD: "${APP_ADMIN_ROTATE_PASSWORD:-true}"
+      APP_ADMIN_ROTATE_PASSWORD: "{{ app_admin_rotate_password | bool | lower }}"
     secrets:
       - db-password
       - app-admin-password
@@ -96,13 +96,18 @@ services:
     restart: "no"
 
   proxy:
-    image: "${NGINX_IMAGE:-nginx:1.30.4-alpine}"
+    image: "{{ nginx_image }}"
     restart: unless-stopped
     init: true
     ports:
-      - "${HTTP_PORT:-8080}:80"
+      - "{{ origin_http_port }}:80"
+      - "{{ origin_https_port }}:443"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/00-arvan-realip.conf:/etc/nginx/conf.d/00-arvan-realip.conf:ro
+      - ./nginx/10-seo-auditor.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/htpasswd:/etc/nginx/auth/htpasswd:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
       - frontnet
     depends_on:
@@ -111,7 +116,10 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - wget -q -O /dev/null http://127.0.0.1/nginx-health || exit 1
+        - >-
+          wget -q -O /dev/null
+          --header='Host: {{ application_domain }}'
+          http://127.0.0.1/nginx-health || exit 1
       interval: 10s
       timeout: 5s
       retries: 5
