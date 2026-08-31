@@ -38,4 +38,4 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind=0.0.0.0:8000", "--workers=2", "--threads=2", "--timeout=180", "--graceful-timeout=30", "--access-logfile=-", "--error-logfile=-", "hello:server"]
+CMD ["gunicorn", "--bind=0.0.0.0:8000", "--workers=2", "--threads=2", "--timeout=240", "--graceful-timeout=30", "--access-logfile=-", "--error-logfile=-", "hello:server"]

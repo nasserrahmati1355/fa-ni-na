@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}درخواست نامعتبر | SEO Auditor{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <h1>درخواست نامعتبر است</h1>
+        <div class="alert alert-danger">
+            اعتبار امنیتی فرم منقضی شده یا با نشست فعلی تطابق ندارد.
+        </div>
+        <p class="muted">{{ reason }}</p>
+        <a class="button" href="{{ url_for('login') }}">بازگشت به صفحه ورود</a>
+    </div>
+</section>
+{% endblock %}

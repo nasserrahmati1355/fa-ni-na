@@ -1,0 +1,594 @@
+---
+- name: Add application login while preserving Nginx Basic Auth
+  hosts: public_servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../vars/public.yml
+    - ../origin_tls/vars/origin_tls.yml
+    - vars/app_auth.yml
+
+  pre_tasks:
+    - name: Require the existing Nginx Basic Authentication layer
+      ansible.builtin.assert:
+        that:
+          - enable_basic_auth | bool
+        fail_msg: >-
+          Stage 2 intentionally preserves the outer Nginx Basic Auth layer.
+          Set enable_basic_auth=true before running this playbook.
+
+    - name: Check required application source files on the Controller
+      ansible.builtin.stat:
+        path: "{{ app_auth_source_dir }}/{{ item }}"
+      loop:
+        - Dockerfile
+        - .dockerignore
+        - app/hello.py
+        - app/auth.py
+        - app/bootstrap_admin.py
+        - app/seo_auditor.py
+        - app/requirements.txt
+        - app/templates/base.html
+        - app/templates/login.html
+        - app/templates/csrf_error.html
+        - app/templates/index.html
+      register: app_auth_source_checks
+      delegate_to: localhost
+      become: false
+
+    - name: Stop when an application source file is missing
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists | default(false)
+          - item.stat.isreg | default(false)
+        fail_msg: "Required application source file is missing: {{ item.item }}"
+      loop: "{{ app_auth_source_checks.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Check the existing Basic Auth password on the Controller
+      ansible.builtin.stat:
+        path: "{{ basic_auth_password_file }}"
+      register: basic_auth_password_stat
+      delegate_to: localhost
+      become: false
+
+    - name: Stop when the existing Basic Auth password is missing
+      ansible.builtin.assert:
+        that:
+          - basic_auth_password_stat.stat.exists | default(false)
+          - basic_auth_password_stat.stat.isreg | default(false)
+        fail_msg: >-
+          The existing Basic Auth password file was not found:
+          {{ basic_auth_password_file }}.
+          Run the public deployment automation first.
+
+    - name: Check deployed Origin prerequisites
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: "{{ item.follow | default(false) }}"
+        get_checksum: false
+        get_mime: false
+      loop:
+        - path: "{{ deployment_dir }}/.env"
+        - path: "{{ deployment_dir }}/secrets/db_password.txt"
+        - path: "{{ deployment_dir }}/nginx/htpasswd"
+        - path: "{{ deployment_dir }}/nginx/00-arvan-realip.conf"
+        - path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        - path: "{{ letsencrypt_fullchain_path }}"
+          follow: true
+        - path: "{{ letsencrypt_private_key_path }}"
+          follow: true
+      register: deployed_auth_prerequisites
+
+    - name: Stop when a deployed prerequisite is missing
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists | default(false)
+          - item.stat.isreg | default(false)
+          - (item.stat.size | default(0) | int) > 0
+        fail_msg: >-
+          Required deployed file is missing, broken, or empty:
+          {{ item.item.path }}
+      loop: "{{ deployed_auth_prerequisites.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+
+    - name: Read the active Nginx virtual-host configuration
+      ansible.builtin.slurp:
+        path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+      register: active_nginx_configuration
+
+    - name: Confirm Basic Auth and Origin TLS are currently active
+      ansible.builtin.assert:
+        that:
+          - >-
+            'auth_basic "Nhref SEO Auditor"'
+            in (active_nginx_configuration.content | b64decode)
+          - >-
+            'listen 443 ssl'
+            in (active_nginx_configuration.content | b64decode)
+          - >-
+            letsencrypt_fullchain_path
+            in (active_nginx_configuration.content | b64decode)
+        fail_msg: >-
+          The active Nginx configuration does not contain both the outer
+          Basic Auth layer and Origin TLS. Complete Stage 1 first.
+
+  tasks:
+    - name: Create the local application-auth secret directory
+      ansible.builtin.file:
+        path: "{{ app_auth_local_secret_dir }}"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+
+    - name: Create or retrieve the application administrator password
+      ansible.builtin.set_fact:
+        app_admin_password: >-
+          {{
+            lookup(
+              'ansible.builtin.password',
+              app_admin_password_file
+              + ' length=24 chars=ascii_letters,digits'
+            )
+          }}
+      no_log: true
+
+    - name: Protect the local application administrator password file
+      ansible.builtin.file:
+        path: "{{ app_admin_password_file }}"
+        state: file
+        mode: "0600"
+      delegate_to: localhost
+      become: false
+
+    - name: Retrieve the existing Nginx Basic Auth password
+      ansible.builtin.set_fact:
+        basic_auth_password: >-
+          {{
+            lookup(
+              'ansible.builtin.password',
+              basic_auth_password_file
+            )
+          }}
+      no_log: true
+
+    - name: Ensure the backend secret group exists
+      ansible.builtin.group:
+        name: "{{ secret_group }}"
+        gid: "{{ backend_gid }}"
+        state: present
+
+    - name: Create application directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - path: "{{ deployment_dir }}/app"
+          owner: "{{ deployment_user }}"
+          group: "{{ deployment_group }}"
+          mode: "0755"
+        - path: "{{ deployment_dir }}/app/templates"
+          owner: "{{ deployment_user }}"
+          group: "{{ deployment_group }}"
+          mode: "0755"
+        - path: "{{ deployment_dir }}/secrets"
+          owner: root
+          group: "{{ secret_group }}"
+          mode: "0750"
+
+    - name: Check whether the Flask session secret exists
+      ansible.builtin.stat:
+        path: "{{ flask_secret_key_path }}"
+      register: flask_secret_key_stat
+
+    - name: Generate the Flask session secret
+      ansible.builtin.command:
+        argv:
+          - openssl
+          - rand
+          - -hex
+          - "32"
+      register: generated_flask_secret_key
+      changed_when: true
+      when: not flask_secret_key_stat.stat.exists
+      no_log: true
+
+    - name: Write the Flask session secret securely
+      ansible.builtin.copy:
+        dest: "{{ flask_secret_key_path }}"
+        content: "{{ generated_flask_secret_key.stdout }}\n"
+        owner: root
+        group: "{{ secret_group }}"
+        mode: "0640"
+      when: not flask_secret_key_stat.stat.exists
+      no_log: true
+
+    - name: Enforce the Flask session secret permissions
+      ansible.builtin.file:
+        path: "{{ flask_secret_key_path }}"
+        state: file
+        owner: root
+        group: "{{ secret_group }}"
+        mode: "0640"
+
+    - name: Copy the application administrator password to the Origin
+      ansible.builtin.copy:
+        dest: "{{ app_admin_password_remote_path }}"
+        content: "{{ app_admin_password }}\n"
+        owner: root
+        group: "{{ secret_group }}"
+        mode: "0640"
+      no_log: true
+
+    - name: Write the application administrator credentials on the Controller
+      ansible.builtin.copy:
+        dest: "{{ generated_app_admin_credentials_file }}"
+        mode: "0600"
+        content: |
+          URL=https://{{ application_domain }}/login
+          Username={{ app_admin_username }}
+          Password={{ app_admin_password }}
+      delegate_to: localhost
+      become: false
+      no_log: true
+
+    - name: Copy the updated Docker build files
+      ansible.builtin.copy:
+        src: "{{ app_auth_source_dir }}/{{ item }}"
+        dest: "{{ deployment_dir }}/{{ item }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+      loop:
+        - Dockerfile
+        - .dockerignore
+
+    - name: Copy the application-auth Python files
+      ansible.builtin.copy:
+        src: "{{ app_auth_source_dir }}/app/{{ item }}"
+        dest: "{{ deployment_dir }}/app/{{ item }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+      loop:
+        - hello.py
+        - auth.py
+        - bootstrap_admin.py
+        - seo_auditor.py
+        - requirements.txt
+
+    - name: Copy the application-auth HTML templates
+      ansible.builtin.copy:
+        src: "{{ app_auth_source_dir }}/app/templates/{{ item }}"
+        dest: "{{ deployment_dir }}/app/templates/{{ item }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+      loop:
+        - base.html
+        - login.html
+        - csrf_error.html
+        - index.html
+
+    - name: Keep the deployed environment metadata current
+      ansible.builtin.lineinfile:
+        path: "{{ deployment_dir }}/.env"
+        regexp: "^{{ item.key }}="
+        line: "{{ item.key }}={{ item.value }}"
+        state: present
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0640"
+      loop:
+        - key: BACKEND_IMAGE
+          value: "{{ app_auth_backend_image }}"
+        - key: SEO_USER_AGENT
+          value: "Nhref-SEO-Auditor/1.2 (+https://{{ application_domain }}/)"
+
+    - name: Render the Origin-TLS Compose file with application authentication
+      ansible.builtin.template:
+        src: templates/docker-compose.app-auth-origin-tls.yml.j2
+        dest: "{{ deployment_dir }}/docker-compose.yml"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Allow same-origin Referer headers for strict CSRF validation
+      ansible.builtin.replace:
+        path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        regexp: 'Referrer-Policy "no-referrer"'
+        replace: 'Referrer-Policy "same-origin"'
+        backup: true
+
+    - name: Forward only the trusted real client address to Flask
+      ansible.builtin.replace:
+        path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        regexp: 'proxy_set_header X-Forwarded-For \$origin_forwarded_for;'
+        replace: 'proxy_set_header X-Forwarded-For $remote_addr;'
+        backup: true
+
+    - name: Validate the Docker Compose configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+          - --quiet
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Deploy the authenticated application
+      block:
+        - name: Build the authenticated Backend image
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - build
+              - --pull
+              - backend
+            chdir: "{{ deployment_dir }}"
+          changed_when: true
+
+        - name: Start MariaDB and wait for readiness
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - up
+              - --detach
+              - --wait
+              - --wait-timeout
+              - "180"
+              - db
+            chdir: "{{ deployment_dir }}"
+          changed_when: true
+
+        - name: Create or update the application administrator
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - --profile
+              - tools
+              - run
+              - --rm
+              - --no-deps
+              - admin-bootstrap
+            chdir: "{{ deployment_dir }}"
+          register: app_admin_bootstrap
+          changed_when: >-
+            'created' in (app_admin_bootstrap.stdout | default(''))
+            or 'updated' in (app_admin_bootstrap.stdout | default(''))
+          no_log: true
+
+        - name: Recreate Backend and Nginx with application authentication
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - up
+              - --detach
+              - --force-recreate
+              - --wait
+              - --wait-timeout
+              - "300"
+              - backend
+              - proxy
+            chdir: "{{ deployment_dir }}"
+          changed_when: true
+
+      rescue:
+        - name: Collect Compose status after an authentication deployment failure
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - ps
+              - --all
+            chdir: "{{ deployment_dir }}"
+          register: failed_auth_compose_status
+          failed_when: false
+          changed_when: false
+
+        - name: Collect Compose logs after an authentication deployment failure
+          ansible.builtin.command:
+            argv:
+              - docker
+              - compose
+              - --env-file
+              - .env
+              - -f
+              - docker-compose.yml
+              - logs
+              - --no-color
+              - --tail
+              - "200"
+              - db
+              - backend
+              - proxy
+            chdir: "{{ deployment_dir }}"
+          register: failed_auth_compose_logs
+          failed_when: false
+          changed_when: false
+
+        - name: Display the authentication deployment failure
+          ansible.builtin.debug:
+            msg:
+              - "Failed task: {{ ansible_failed_task.name | default('unknown') }}"
+              - "Error: {{ ansible_failed_result.msg | default('not available') }}"
+              - "{{ failed_auth_compose_status.stdout | default('') }}"
+              - "{{ failed_auth_compose_logs.stdout | default('') }}"
+
+        - name: Stop after the authentication deployment failure
+          ansible.builtin.fail:
+            msg: >-
+              Application authentication deployment failed at
+              {{ ansible_failed_task.name | default('unknown') }}.
+
+    - name: Test the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      register: app_auth_nginx_test
+      changed_when: false
+
+    - name: Verify that Basic Auth still protects the public login page
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}/login?outer_auth_check={{
+            lookup('ansible.builtin.pipe', 'date +%s')
+          }}
+        method: GET
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: none
+        status_code: 401
+        return_content: false
+        timeout: 45
+      register: outer_basic_auth_test
+      delegate_to: localhost
+      become: false
+
+    - name: Verify layered authentication with a persistent cookie jar
+      ansible.builtin.command:
+        argv:
+          - /bin/bash
+          - "{{ playbook_dir }}/scripts/verify_layered_auth.sh"
+          - "{{ application_domain }}"
+          - "{{ basic_auth_username }}"
+          - "{{ basic_auth_password_file }}"
+          - "{{ app_admin_username }}"
+          - "{{ app_admin_password_file }}"
+      register: layered_auth_flow
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Display non-sensitive layered authentication diagnostics
+      ansible.builtin.debug:
+        var: layered_auth_flow.stdout_lines
+
+    - name: Read the final Compose service status
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - ps
+          - --all
+        chdir: "{{ deployment_dir }}"
+      register: app_auth_compose_status
+      changed_when: false
+
+    - name: Write the application-auth deployment report on the Controller
+      ansible.builtin.copy:
+        dest: "{{ app_auth_deployment_report }}"
+        mode: "0644"
+        content: |
+          ========================================
+          Application Authentication Deployment
+          ========================================
+
+          Generated at:
+          {{ lookup('ansible.builtin.pipe', 'date --iso-8601=seconds') }}
+
+          Domain:
+          {{ application_domain }}
+
+          Application admin:
+          {{ app_admin_username }}
+
+          Existing outer Basic Auth:
+          PRESERVED
+
+          Flask Login:
+          ENABLED
+
+          CSRF protection:
+          ENABLED
+
+          Secure session cookie:
+          {{ session_cookie_secure | bool | ternary('ENABLED', 'DISABLED') }}
+
+          ----------------------------------------
+          Docker Compose Status
+          ----------------------------------------
+
+          {{ app_auth_compose_status.stdout }}
+
+          ----------------------------------------
+          Nginx Configuration Test
+          ----------------------------------------
+
+          {{ app_auth_nginx_test.stdout | default('') }}
+          {{ app_auth_nginx_test.stderr | default('') }}
+
+          ----------------------------------------
+          Authentication Tests
+          ----------------------------------------
+
+          Public request without Basic Auth: 401 PASSED
+          Flask login page with Basic Auth: 200 PASSED
+          CSRF-protected application login: PASSED
+          Protected SEO dashboard: 200 PASSED
+
+          Final result:
+          Layered authentication deployment: PASSED
+      delegate_to: localhost
+      become: false
+
+    - name: Display the Stage 2 result
+      ansible.builtin.debug:
+        msg:
+          - "Outer Nginx Basic Auth is still enabled."
+          - "Flask application login is enabled."
+          - "Application admin: {{ app_admin_username }}"
+          - "Credentials: {{ generated_app_admin_credentials_file }}"
+          - "Report: {{ app_auth_deployment_report }}"

@@ -1,0 +1,273 @@
+---
+- name: Verify layered Nginx and Flask authentication
+  hosts: public_servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../vars/public.yml
+    - ../origin_tls/vars/origin_tls.yml
+    - vars/app_auth.yml
+
+  tasks:
+    - name: Check local authentication credential files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ basic_auth_password_file }}"
+        - "{{ app_admin_password_file }}"
+      register: local_auth_credential_files
+      delegate_to: localhost
+      become: false
+
+    - name: Stop when a local authentication credential is missing
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists | default(false)
+          - item.stat.isreg | default(false)
+          - (item.stat.size | default(0) | int) > 0
+        fail_msg: "Required local credential file is missing: {{ item.item }}"
+      loop: "{{ local_auth_credential_files.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Retrieve the existing Nginx Basic Auth password
+      ansible.builtin.set_fact:
+        basic_auth_password: >-
+          {{
+            lookup(
+              'ansible.builtin.password',
+              basic_auth_password_file
+            )
+          }}
+      no_log: true
+
+    - name: Retrieve the application administrator password
+      ansible.builtin.set_fact:
+        app_admin_password: >-
+          {{
+            lookup(
+              'ansible.builtin.password',
+              app_admin_password_file
+            )
+          }}
+      no_log: true
+
+    - name: Validate the active Compose configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+          - --quiet
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Read the Compose service status
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - ps
+          - --all
+        chdir: "{{ deployment_dir }}"
+      register: layered_auth_compose_status
+      changed_when: false
+
+    - name: Test the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      register: layered_auth_nginx_test
+      changed_when: false
+
+    - name: Verify the Origin-only TLS marker through ArvanCloud
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}{{ origin_tls_health_path }}?stage2={{
+            lookup('ansible.builtin.pipe', 'date +%s')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 45
+      register: layered_auth_origin_tls_test
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm that ArvanCloud still reaches the Origin over HTTPS
+      ansible.builtin.assert:
+        that:
+          - layered_auth_origin_tls_test.content | trim == "origin-tls-ok"
+        fail_msg: >-
+          The HTTPS-Origin marker was not returned. Keep ArvanCloud Origin
+          protocol on HTTPS and Origin port on 443.
+
+    - name: Verify the public health endpoint remains unauthenticated
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}/health?stage2={{
+            lookup('ansible.builtin.pipe', 'date +%s')
+          }}
+        method: GET
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 45
+      register: layered_auth_health_test
+      delegate_to: localhost
+      become: false
+
+    - name: Verify layered authentication with a persistent cookie jar
+      ansible.builtin.command:
+        argv:
+          - /bin/bash
+          - "{{ playbook_dir }}/scripts/verify_layered_auth.sh"
+          - "{{ application_domain }}"
+          - "{{ basic_auth_username }}"
+          - "{{ basic_auth_password_file }}"
+          - "{{ app_admin_username }}"
+          - "{{ app_admin_password_file }}"
+      register: layered_auth_flow
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Display non-sensitive layered authentication diagnostics
+      ansible.builtin.debug:
+        var: layered_auth_flow.stdout_lines
+
+    - name: Collect recent Backend authentication logs
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - logs
+          - --no-color
+          - --timestamps
+          - --tail
+          - "80"
+          - backend
+        chdir: "{{ deployment_dir }}"
+      register: layered_auth_backend_logs
+      changed_when: false
+
+    - name: Write the layered-authentication verification report
+      ansible.builtin.copy:
+        dest: "{{ app_auth_verification_report }}"
+        mode: "0644"
+        content: |
+          ========================================
+          Layered Authentication Verification
+          ========================================
+
+          Generated at:
+          {{ lookup('ansible.builtin.pipe', 'date --iso-8601=seconds') }}
+
+          Domain:
+          {{ application_domain }}
+
+          ----------------------------------------
+          Docker Compose
+          ----------------------------------------
+
+          {{ layered_auth_compose_status.stdout }}
+
+          ----------------------------------------
+          Nginx Configuration
+          ----------------------------------------
+
+          {{ layered_auth_nginx_test.stdout | default('') }}
+          {{ layered_auth_nginx_test.stderr | default('') }}
+
+          ----------------------------------------
+          Origin TLS
+          ----------------------------------------
+
+          Marker:
+          {{ layered_auth_origin_tls_test.content | trim }}
+
+          Result:
+          PASSED
+
+          ----------------------------------------
+          Public Health
+          ----------------------------------------
+
+          Status:
+          {{ layered_auth_health_test.status }}
+
+          Response:
+          {{ layered_auth_health_test.content | trim }}
+
+          ----------------------------------------
+          Authentication Layers
+          ----------------------------------------
+
+          Nginx Basic Auth without credentials: 401 PASSED
+          Flask login page through Basic Auth: 200 PASSED
+          CSRF token rendered: PASSED
+          Application login: PASSED
+          Protected dashboard: PASSED
+          CSRF-protected logout: PASSED
+          Post-logout access redirected to Flask login: PASSED
+
+          ----------------------------------------
+          Recent Backend Logs
+          ----------------------------------------
+
+          {{ layered_auth_backend_logs.stdout }}
+
+          ----------------------------------------
+          Final Result
+          ----------------------------------------
+
+          Origin end-to-end TLS: PASSED
+          Nginx Basic Authentication: PRESERVED
+          Flask application authentication: PASSED
+          Session cookie flow: PASSED
+          CSRF protection: PASSED
+          Login and logout: PASSED
+
+          Overall layered authentication verification: PASSED
+      delegate_to: localhost
+      become: false
+
+    - name: Display the layered-authentication result
+      ansible.builtin.debug:
+        msg:
+          - "Nginx Basic Auth remains enabled."
+          - "Flask Login, session, CSRF, and logout are working."
+          - "Report: {{ app_auth_verification_report }}"
+          - "Overall layered authentication verification: PASSED"

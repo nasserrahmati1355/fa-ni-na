@@ -25,7 +25,7 @@ server {
     add_header Expires "0" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
-    add_header Referrer-Policy "no-referrer" always;
+    add_header Referrer-Policy "same-origin" always;
 
     error_page 502 503 504 =503 @http_backend_unavailable;
 
@@ -53,7 +53,7 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $origin_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $origin_forwarded_proto;
         proxy_set_header Authorization "";
     }
@@ -75,7 +75,7 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $origin_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $origin_forwarded_proto;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
@@ -141,7 +141,7 @@ server {
     add_header Expires "0" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
-    add_header Referrer-Policy "no-referrer" always;
+    add_header Referrer-Policy "same-origin" always;
 
     error_page 502 503 504 =503 @https_backend_unavailable;
 
@@ -180,7 +180,7 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $origin_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $origin_forwarded_proto;
         proxy_set_header Authorization "";
     }
@@ -202,7 +202,7 @@ server {
 
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $origin_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $origin_forwarded_proto;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
