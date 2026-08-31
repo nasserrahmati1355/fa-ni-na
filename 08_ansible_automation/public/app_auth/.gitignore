@@ -5,3 +5,6 @@ app_auth_verification.txt
 app_auth_deployment_report.txt
 remove_nginx_basic_auth_output.txt
 nginx_basic_auth_removal_report.txt
+cleanup_legacy_basic_auth_output.txt
+legacy_basic_auth_cleanup_report.txt
+app_auth_verification_output.txt

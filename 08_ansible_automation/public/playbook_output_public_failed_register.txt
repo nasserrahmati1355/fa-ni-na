@@ -1,0 +1,600 @@
+Using /home/naser/naserrahmati_kubernetes_02/02_ansible_setup/ansible.cfg as config file
+
+PLAY [Preflight checks for the ArvanCloud public deployment] *******************
+
+TASK [Gathering Facts] *********************************************************
+ok: [ubuntu_public]
+
+TASK [Validate the target operating system] ************************************
+ok: [ubuntu_public] => {
+    "changed": false,
+    "msg": "Ubuntu 22.04 LTS (Jammy) detected."
+}
+
+TASK [Validate the selected ArvanCloud origin mode] ****************************
+ok: [ubuntu_public] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Check required SEO Auditor source files on the Controller] ***************
+ok: [ubuntu_public -> localhost] => (item=Dockerfile) => {"ansible_loop_var": "item", "changed": false, "item": "Dockerfile", "stat": {"atime": 1787813418.500826, "attr_flags": "", "attributes": [], "block_size": 4096, "blocks": 8, "charset": "us-ascii", "checksum": "bebab97dee57ade9beb0109c9648fdf63c843ef8", "ctime": 1787813418.477825, "dev": 64770, "device_type": 0, "disk_usage_bytes": 4096, "executable": false, "exists": true, "gid": 1002, "gr_name": "naser", "inode": 52539011, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/plain", "mode": "0644", "mtime": 1787813418.477825, "nlink": 1, "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/Dockerfile", "pw_name": "naser", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 905, "uid": 1002, "version": "1781826955", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+ok: [ubuntu_public -> localhost] => (item=.dockerignore) => {"ansible_loop_var": "item", "changed": false, "item": ".dockerignore", "stat": {"atime": 1787813418.500826, "attr_flags": "", "attributes": [], "block_size": 4096, "blocks": 8, "charset": "us-ascii", "checksum": "b8aa6fcd5f25e50eec532aa074c12d0fff5c7f88", "ctime": 1787813418.477825, "dev": 64770, "device_type": 0, "disk_usage_bytes": 4096, "executable": false, "exists": true, "gid": 1002, "gr_name": "naser", "inode": 52538577, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/plain", "mode": "0644", "mtime": 1787813418.477825, "nlink": 1, "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/.dockerignore", "pw_name": "naser", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 206, "uid": 1002, "version": "1864775700", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+ok: [ubuntu_public -> localhost] => (item=app/hello.py) => {"ansible_loop_var": "item", "changed": false, "item": "app/hello.py", "stat": {"atime": 1787813418.5018258, "attr_flags": "", "attributes": [], "block_size": 4096, "blocks": 16, "charset": "utf-8", "checksum": "ed63e3257ea3ace2dc21429a21f7faafb314f5d3", "ctime": 1787813418.4788249, "dev": 64770, "device_type": 0, "disk_usage_bytes": 8192, "executable": false, "exists": true, "gid": 1002, "gr_name": "naser", "inode": 52539065, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/x-script.python", "mode": "0644", "mtime": 1787813418.4788249, "nlink": 1, "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/hello.py", "pw_name": "naser", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 5950, "uid": 1002, "version": "339106934", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+ok: [ubuntu_public -> localhost] => (item=app/seo_auditor.py) => {"ansible_loop_var": "item", "changed": false, "item": "app/seo_auditor.py", "stat": {"atime": 1787813418.5018258, "attr_flags": "", "attributes": [], "block_size": 4096, "blocks": 40, "charset": "utf-8", "checksum": "5e362d7360f0ff8fca725f62e6ace9f2105b81ac", "ctime": 1787813418.479825, "dev": 64770, "device_type": 0, "disk_usage_bytes": 20480, "executable": false, "exists": true, "gid": 1002, "gr_name": "naser", "inode": 52539268, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/x-script.python", "mode": "0644", "mtime": 1787813418.479825, "nlink": 1, "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/seo_auditor.py", "pw_name": "naser", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 17323, "uid": 1002, "version": "2113868969", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+ok: [ubuntu_public -> localhost] => (item=app/requirements.txt) => {"ansible_loop_var": "item", "changed": false, "item": "app/requirements.txt", "stat": {"atime": 1787813418.5018258, "attr_flags": "", "attributes": [], "block_size": 4096, "blocks": 8, "charset": "us-ascii", "checksum": "6d00118e8e8798f04239141d1a57255e9f81f0b5", "ctime": 1787813418.4788249, "dev": 64770, "device_type": 0, "disk_usage_bytes": 4096, "executable": false, "exists": true, "gid": 1002, "gr_name": "naser", "inode": 52539071, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/plain", "mode": "0644", "mtime": 1787813418.4788249, "nlink": 1, "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/requirements.txt", "pw_name": "naser", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 100, "uid": 1002, "version": "3506029264", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+ok: [ubuntu_public -> localhost] => (item=app/templates/index.html) => {"ansible_loop_var": "item", "changed": false, "item": "app/templates/index.html", "stat": {"atime": 1787813418.502826, "attr_flags": "", "attributes": [], "block_size": 4096, "blocks": 24, "charset": "utf-8", "checksum": "b9c665d624f40463998247c0b9890cb63d8d44a2", "ctime": 1787813418.480825, "dev": 64770, "device_type": 0, "disk_usage_bytes": 12288, "executable": false, "exists": true, "gid": 1002, "gr_name": "naser", "inode": 8962118, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/html", "mode": "0644", "mtime": 1787813418.480825, "nlink": 1, "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/templates/index.html", "pw_name": "naser", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 10961, "uid": 1002, "version": "4248123764", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+
+TASK [Stop when a required source file is missing] *****************************
+ok: [ubuntu_public] => (item=Dockerfile) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "failed": false,
+        "item": "Dockerfile",
+        "stat": {
+            "atime": 1787813418.500826,
+            "attr_flags": "",
+            "attributes": [],
+            "block_size": 4096,
+            "blocks": 8,
+            "charset": "us-ascii",
+            "checksum": "bebab97dee57ade9beb0109c9648fdf63c843ef8",
+            "ctime": 1787813418.477825,
+            "dev": 64770,
+            "device_type": 0,
+            "disk_usage_bytes": 4096,
+            "executable": false,
+            "exists": true,
+            "gid": 1002,
+            "gr_name": "naser",
+            "inode": 52539011,
+            "isblk": false,
+            "ischr": false,
+            "isdir": false,
+            "isfifo": false,
+            "isgid": false,
+            "islnk": false,
+            "isreg": true,
+            "issock": false,
+            "isuid": false,
+            "mimetype": "text/plain",
+            "mode": "0644",
+            "mtime": 1787813418.477825,
+            "nlink": 1,
+            "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/Dockerfile",
+            "pw_name": "naser",
+            "readable": true,
+            "rgrp": true,
+            "roth": true,
+            "rusr": true,
+            "size": 905,
+            "uid": 1002,
+            "version": "1781826955",
+            "wgrp": false,
+            "woth": false,
+            "writeable": true,
+            "wusr": true,
+            "xgrp": false,
+            "xoth": false,
+            "xusr": false
+        }
+    },
+    "msg": "All assertions passed"
+}
+ok: [ubuntu_public] => (item=.dockerignore) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "failed": false,
+        "item": ".dockerignore",
+        "stat": {
+            "atime": 1787813418.500826,
+            "attr_flags": "",
+            "attributes": [],
+            "block_size": 4096,
+            "blocks": 8,
+            "charset": "us-ascii",
+            "checksum": "b8aa6fcd5f25e50eec532aa074c12d0fff5c7f88",
+            "ctime": 1787813418.477825,
+            "dev": 64770,
+            "device_type": 0,
+            "disk_usage_bytes": 4096,
+            "executable": false,
+            "exists": true,
+            "gid": 1002,
+            "gr_name": "naser",
+            "inode": 52538577,
+            "isblk": false,
+            "ischr": false,
+            "isdir": false,
+            "isfifo": false,
+            "isgid": false,
+            "islnk": false,
+            "isreg": true,
+            "issock": false,
+            "isuid": false,
+            "mimetype": "text/plain",
+            "mode": "0644",
+            "mtime": 1787813418.477825,
+            "nlink": 1,
+            "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/.dockerignore",
+            "pw_name": "naser",
+            "readable": true,
+            "rgrp": true,
+            "roth": true,
+            "rusr": true,
+            "size": 206,
+            "uid": 1002,
+            "version": "1864775700",
+            "wgrp": false,
+            "woth": false,
+            "writeable": true,
+            "wusr": true,
+            "xgrp": false,
+            "xoth": false,
+            "xusr": false
+        }
+    },
+    "msg": "All assertions passed"
+}
+ok: [ubuntu_public] => (item=app/hello.py) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "failed": false,
+        "item": "app/hello.py",
+        "stat": {
+            "atime": 1787813418.5018258,
+            "attr_flags": "",
+            "attributes": [],
+            "block_size": 4096,
+            "blocks": 16,
+            "charset": "utf-8",
+            "checksum": "ed63e3257ea3ace2dc21429a21f7faafb314f5d3",
+            "ctime": 1787813418.4788249,
+            "dev": 64770,
+            "device_type": 0,
+            "disk_usage_bytes": 8192,
+            "executable": false,
+            "exists": true,
+            "gid": 1002,
+            "gr_name": "naser",
+            "inode": 52539065,
+            "isblk": false,
+            "ischr": false,
+            "isdir": false,
+            "isfifo": false,
+            "isgid": false,
+            "islnk": false,
+            "isreg": true,
+            "issock": false,
+            "isuid": false,
+            "mimetype": "text/x-script.python",
+            "mode": "0644",
+            "mtime": 1787813418.4788249,
+            "nlink": 1,
+            "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/hello.py",
+            "pw_name": "naser",
+            "readable": true,
+            "rgrp": true,
+            "roth": true,
+            "rusr": true,
+            "size": 5950,
+            "uid": 1002,
+            "version": "339106934",
+            "wgrp": false,
+            "woth": false,
+            "writeable": true,
+            "wusr": true,
+            "xgrp": false,
+            "xoth": false,
+            "xusr": false
+        }
+    },
+    "msg": "All assertions passed"
+}
+ok: [ubuntu_public] => (item=app/seo_auditor.py) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "failed": false,
+        "item": "app/seo_auditor.py",
+        "stat": {
+            "atime": 1787813418.5018258,
+            "attr_flags": "",
+            "attributes": [],
+            "block_size": 4096,
+            "blocks": 40,
+            "charset": "utf-8",
+            "checksum": "5e362d7360f0ff8fca725f62e6ace9f2105b81ac",
+            "ctime": 1787813418.479825,
+            "dev": 64770,
+            "device_type": 0,
+            "disk_usage_bytes": 20480,
+            "executable": false,
+            "exists": true,
+            "gid": 1002,
+            "gr_name": "naser",
+            "inode": 52539268,
+            "isblk": false,
+            "ischr": false,
+            "isdir": false,
+            "isfifo": false,
+            "isgid": false,
+            "islnk": false,
+            "isreg": true,
+            "issock": false,
+            "isuid": false,
+            "mimetype": "text/x-script.python",
+            "mode": "0644",
+            "mtime": 1787813418.479825,
+            "nlink": 1,
+            "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/seo_auditor.py",
+            "pw_name": "naser",
+            "readable": true,
+            "rgrp": true,
+            "roth": true,
+            "rusr": true,
+            "size": 17323,
+            "uid": 1002,
+            "version": "2113868969",
+            "wgrp": false,
+            "woth": false,
+            "writeable": true,
+            "wusr": true,
+            "xgrp": false,
+            "xoth": false,
+            "xusr": false
+        }
+    },
+    "msg": "All assertions passed"
+}
+ok: [ubuntu_public] => (item=app/requirements.txt) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "failed": false,
+        "item": "app/requirements.txt",
+        "stat": {
+            "atime": 1787813418.5018258,
+            "attr_flags": "",
+            "attributes": [],
+            "block_size": 4096,
+            "blocks": 8,
+            "charset": "us-ascii",
+            "checksum": "6d00118e8e8798f04239141d1a57255e9f81f0b5",
+            "ctime": 1787813418.4788249,
+            "dev": 64770,
+            "device_type": 0,
+            "disk_usage_bytes": 4096,
+            "executable": false,
+            "exists": true,
+            "gid": 1002,
+            "gr_name": "naser",
+            "inode": 52539071,
+            "isblk": false,
+            "ischr": false,
+            "isdir": false,
+            "isfifo": false,
+            "isgid": false,
+            "islnk": false,
+            "isreg": true,
+            "issock": false,
+            "isuid": false,
+            "mimetype": "text/plain",
+            "mode": "0644",
+            "mtime": 1787813418.4788249,
+            "nlink": 1,
+            "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/requirements.txt",
+            "pw_name": "naser",
+            "readable": true,
+            "rgrp": true,
+            "roth": true,
+            "rusr": true,
+            "size": 100,
+            "uid": 1002,
+            "version": "3506029264",
+            "wgrp": false,
+            "woth": false,
+            "writeable": true,
+            "wusr": true,
+            "xgrp": false,
+            "xoth": false,
+            "xusr": false
+        }
+    },
+    "msg": "All assertions passed"
+}
+ok: [ubuntu_public] => (item=app/templates/index.html) => {
+    "ansible_loop_var": "item",
+    "changed": false,
+    "item": {
+        "ansible_loop_var": "item",
+        "changed": false,
+        "failed": false,
+        "item": "app/templates/index.html",
+        "stat": {
+            "atime": 1787813418.502826,
+            "attr_flags": "",
+            "attributes": [],
+            "block_size": 4096,
+            "blocks": 24,
+            "charset": "utf-8",
+            "checksum": "b9c665d624f40463998247c0b9890cb63d8d44a2",
+            "ctime": 1787813418.480825,
+            "dev": 64770,
+            "device_type": 0,
+            "disk_usage_bytes": 12288,
+            "executable": false,
+            "exists": true,
+            "gid": 1002,
+            "gr_name": "naser",
+            "inode": 8962118,
+            "isblk": false,
+            "ischr": false,
+            "isdir": false,
+            "isfifo": false,
+            "isgid": false,
+            "islnk": false,
+            "isreg": true,
+            "issock": false,
+            "isuid": false,
+            "mimetype": "text/html",
+            "mode": "0644",
+            "mtime": 1787813418.480825,
+            "nlink": 1,
+            "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/../../04_docker/app/templates/index.html",
+            "pw_name": "naser",
+            "readable": true,
+            "rgrp": true,
+            "roth": true,
+            "rusr": true,
+            "size": 10961,
+            "uid": 1002,
+            "version": "4248123764",
+            "wgrp": false,
+            "woth": false,
+            "writeable": true,
+            "wusr": true,
+            "xgrp": false,
+            "xoth": false,
+            "xusr": false
+        }
+    },
+    "msg": "All assertions passed"
+}
+
+TASK [Confirm that SSH on the origin is reachable from the Controller] *********
+ok: [ubuntu_public -> localhost] => {"changed": false, "elapsed": 0, "match_groupdict": {}, "match_groups": [], "path": null, "port": 22, "search_regex": null, "state": "started"}
+
+TASK [Resolve the public domain from the Controller] ***************************
+ok: [ubuntu_public -> localhost] => {"changed": false, "changed_when_result": false, "cmd": ["getent", "ahostsv4", "nhref.ir"], "delta": "0:00:00.007628", "end": "2026-08-28 21:01:14.025013", "msg": "", "rc": 0, "start": "2026-08-28 21:01:14.017385", "stderr": "", "stderr_lines": [], "stdout": "185.192.114.171 STREAM nhref.ir\n185.192.114.171 DGRAM  \n185.192.114.171 RAW    ", "stdout_lines": ["185.192.114.171 STREAM nhref.ir", "185.192.114.171 DGRAM  ", "185.192.114.171 RAW    "]}
+
+TASK [Confirm that the public domain resolves] *********************************
+ok: [ubuntu_public] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Fetch the current ArvanCloud edge IP list] *******************************
+ok: [ubuntu_public -> localhost] => {"cache_control": "max-age=0", "changed": false, "changed_when_result": false, "connection": "close", "content": "185.143.232.0/22\n188.229.116.16/30\n94.101.182.0/27\n2.144.3.128/28\n37.32.16.0/27\n37.32.17.0/27\n37.32.18.0/27\n37.32.19.0/27\n185.215.232.0/22\n178.131.120.48/28\n94.101.183.0/28\n78.157.36.112/28\n95.38.61.80/28", "content_type": "text/plain; charset=utf-8", "cookies": {"XSRF-TOKEN": "eyJpdiI6ImVaaU8ydkFSeTJ1aXUxZUdLaXB5N3c9PSIsInZhbHVlIjoiL2JVdm9ScUhrUlkwM0NjcVRudlZKRUsrc0U2SEc5UUFKZlFWQ0g1RHV6WUI3WHJ1M0o3SXh1bktkc1llczQwOWZxdkREcDE5OUozaDNVN0JqcitHeGlFVTNVcDRZdkU3T1VabWR0c0UvZ2VneWJKY2x0M1N6U1VFVlhqaVZEQzciLCJtYWMiOiI4NGE5ZDMxMTA4NDJmMTU1MjZlZDZlNjBjMGJhYzNmMDliNDdkYTY1NmYyMjMyY2YzZWIzMmY1YmFmNjU4Y2U2IiwidGFnIjoiIn0%3D", "arvan_session": "eyJpdiI6ImxENXI1ZEJKa1hwc0x5dWh4ZWEwNUE9PSIsInZhbHVlIjoiUWJCd2VoSFp2bnNtMDN0bEdmYWFPSzJDNVJCZW9FYUNFRktSSjlyNVdtZ0RqNGZTaDU0aVNhTVNTa2lhWHM0MlIxWExlbThjMmw5Q0ZxNWhhT3prVmVNMG5vVlh5MTN3WXJTNGJ0ZllST0Zlb0ZCQ2pOUjZuU3lQSkVEMCtKcEkiLCJtYWMiOiIyMWQ1NTJjNWJjMDczNzczNGM0N2FlMDM0YTg0ZTJmNDExYzc4N2Y5ZGRhNzVkNzE1OGU0ZGZlNmJhNDM4MmQ0IiwidGFnIjoiIn0%3D", "lang": "en"}, "cookies_string": "XSRF-TOKEN=eyJpdiI6ImVaaU8ydkFSeTJ1aXUxZUdLaXB5N3c9PSIsInZhbHVlIjoiL2JVdm9ScUhrUlkwM0NjcVRudlZKRUsrc0U2SEc5UUFKZlFWQ0g1RHV6WUI3WHJ1M0o3SXh1bktkc1llczQwOWZxdkREcDE5OUozaDNVN0JqcitHeGlFVTNVcDRZdkU3T1VabWR0c0UvZ2VneWJKY2x0M1N6U1VFVlhqaVZEQzciLCJtYWMiOiI4NGE5ZDMxMTA4NDJmMTU1MjZlZDZlNjBjMGJhYzNmMDliNDdkYTY1NmYyMjMyY2YzZWIzMmY1YmFmNjU4Y2U2IiwidGFnIjoiIn0%3D; arvan_session=eyJpdiI6ImxENXI1ZEJKa1hwc0x5dWh4ZWEwNUE9PSIsInZhbHVlIjoiUWJCd2VoSFp2bnNtMDN0bEdmYWFPSzJDNVJCZW9FYUNFRktSSjlyNVdtZ0RqNGZTaDU0aVNhTVNTa2lhWHM0MlIxWExlbThjMmw5Q0ZxNWhhT3prVmVNMG5vVlh5MTN3WXJTNGJ0ZllST0Zlb0ZCQ2pOUjZuU3lQSkVEMCtKcEkiLCJtYWMiOiIyMWQ1NTJjNWJjMDczNzczNGM0N2FlMDM0YTg0ZTJmNDExYzc4N2Y5ZGRhNzVkNzE1OGU0ZGZlNmJhNDM4MmQ0IiwidGFnIjoiIn0%3D; lang=en", "date": "Fri, 28 Aug 2026 17:31:15 GMT", "elapsed": 0, "expires": "Fri, 28 Aug 2026 17:31:15 GMT", "failed_when_result": false, "msg": "OK (unknown bytes)", "redirected": false, "server": "ArvanCloud", "server_timing": "total;dur=174", "set_cookie": "XSRF-TOKEN=eyJpdiI6ImVaaU8ydkFSeTJ1aXUxZUdLaXB5N3c9PSIsInZhbHVlIjoiL2JVdm9ScUhrUlkwM0NjcVRudlZKRUsrc0U2SEc5UUFKZlFWQ0g1RHV6WUI3WHJ1M0o3SXh1bktkc1llczQwOWZxdkREcDE5OUozaDNVN0JqcitHeGlFVTNVcDRZdkU3T1VabWR0c0UvZ2VneWJKY2x0M1N6U1VFVlhqaVZEQzciLCJtYWMiOiI4NGE5ZDMxMTA4NDJmMTU1MjZlZDZlNjBjMGJhYzNmMDliNDdkYTY1NmYyMjMyY2YzZWIzMmY1YmFmNjU4Y2U2IiwidGFnIjoiIn0%3D; expires=Fri, 28 Aug 2026 19:31:15 GMT; Max-Age=7200; path=/, arvan_session=eyJpdiI6ImxENXI1ZEJKa1hwc0x5dWh4ZWEwNUE9PSIsInZhbHVlIjoiUWJCd2VoSFp2bnNtMDN0bEdmYWFPSzJDNVJCZW9FYUNFRktSSjlyNVdtZ0RqNGZTaDU0aVNhTVNTa2lhWHM0MlIxWExlbThjMmw5Q0ZxNWhhT3prVmVNMG5vVlh5MTN3WXJTNGJ0ZllST0Zlb0ZCQ2pOUjZuU3lQSkVEMCtKcEkiLCJtYWMiOiIyMWQ1NTJjNWJjMDczNzczNGM0N2FlMDM0YTg0ZTJmNDExYzc4N2Y5ZGRhNzVkNzE1OGU0ZGZlNmJhNDM4MmQ0IiwidGFnIjoiIn0%3D; expires=Fri, 28 Aug 2026 19:31:15 GMT; Max-Age=7200; path=/; httponly, lang=en; expires=Mon, 07 Sep 2026 17:31:15 GMT; Max-Age=864000; path=/; secure; httponly", "status": 200, "strict_transport_security": "max-age=15724800; includeSubDomains", "transfer_encoding": "chunked", "url": "https://www.arvancloud.ir/en/ips.txt", "vary": "Accept-Encoding, Accept-Encoding", "x_cache": "EXPIRED", "x_request_id": "845441c5ca283e65d228cc7e1162cbec", "x_sid": "2090", "x_xss_protection": "1; mode=block"}
+
+TASK [Parse the current ArvanCloud CIDR list] **********************************
+ok: [ubuntu_public] => {"ansible_facts": {"arvan_cdn_cidrs": ["185.143.232.0/22", "188.229.116.16/30", "94.101.182.0/27", "2.144.3.128/28", "37.32.16.0/27", "37.32.17.0/27", "37.32.18.0/27", "37.32.19.0/27", "185.215.232.0/22", "178.131.120.48/28", "94.101.183.0/28", "78.157.36.112/28", "95.38.61.80/28"]}, "changed": false}
+
+TASK [Use the bundled ArvanCloud CIDR fallback list] ***************************
+skipping: [ubuntu_public] => {"changed": false, "false_condition": "arvan_cdn_cidrs is not defined or arvan_cdn_cidrs | length == 0", "skip_reason": "Conditional result was False"}
+
+TASK [Probe the public ArvanCloud endpoint] ************************************
+ok: [ubuntu_public -> localhost] => {"changed": false, "changed_when_result": false, "elapsed": 0, "failed_when_result": false, "failed_when_suppressed_exception": "(traceback unavailable)", "msg": "Status code was -1 and not [200, 301, 302, 401, 403, 404, 502, 503]: Request failed: <urlopen error [Errno 111] Connection refused>", "redirected": false, "status": -1, "url": "https://nhref.ir/"}
+
+TASK [Display preflight information] *******************************************
+ok: [ubuntu_public] => {
+    "msg": [
+        "Origin: 185.192.114.171:80",
+        "Public domain: nhref.ir",
+        "Public DNS result: ['185.192.114.171 STREAM nhref.ir', '185.192.114.171 DGRAM  ', '185.192.114.171 RAW    ']",
+        "ArvanCloud CIDRs loaded: 13",
+        "Current public HTTP result: -1"
+    ]
+}
+
+PLAY [Prepare the public Ubuntu origin server] *********************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [ubuntu_public]
+
+TASK [Install base packages] ***************************************************
+changed: [ubuntu_public] => {"cache_update_time": 1787938285, "cache_updated": true, "changed": true, "stderr": "", "stderr_lines": [], "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following packages were automatically installed and are no longer required:\n  libfwupd2 libfwupdplugin5 libgcab-1.0-0 libgusb2 libsmbios-c2\nUse 'sudo apt autoremove' to remove them.\nThe following NEW packages will be installed:\n  python3-passlib\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 368 kB of archives.\nAfter this operation, 2096 kB of additional disk space will be used.\nGet:1 http://ir.archive.ubuntu.com/ubuntu jammy/main amd64 python3-passlib all 1.7.4-1 [368 kB]\nFetched 368 kB in 1s (444 kB/s)\nSelecting previously unselected package python3-passlib.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 111604 files and directories currently installed.)\r\nPreparing to unpack .../python3-passlib_1.7.4-1_all.deb ...\r\nUnpacking python3-passlib (1.7.4-1) ...\r\nSetting up python3-passlib (1.7.4-1) ...\r\n\nRunning kernel seems to be up-to-date.\n\nServices to be restarted:\n systemctl restart cron.service\n systemctl restart fwupd.service\n systemctl restart packagekit.service\n systemctl restart ssh.service\n systemctl restart systemd-journald.service\n /etc/needrestart/restart.d/systemd-manager\n systemctl restart systemd-networkd.service\n systemctl restart systemd-resolved.service\n systemctl restart systemd-timesyncd.service\n\nService restarts being deferred:\n systemctl restart NetworkManager.service\n systemctl restart networkd-dispatcher.service\n systemctl restart systemd-logind.service\n systemctl restart unattended-upgrades.service\n systemctl restart user@1001.service\n\nNo containers need to be restarted.\n\nNo user sessions are running outdated binaries.\n\nNo VM guests are running outdated hypervisor (qemu) binaries on this host.\n", "stdout_lines": ["Reading package lists...", "Building dependency tree...", "Reading state information...", "The following packages were automatically installed and are no longer required:", "  libfwupd2 libfwupdplugin5 libgcab-1.0-0 libgusb2 libsmbios-c2", "Use 'sudo apt autoremove' to remove them.", "The following NEW packages will be installed:", "  python3-passlib", "0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.", "Need to get 368 kB of archives.", "After this operation, 2096 kB of additional disk space will be used.", "Get:1 http://ir.archive.ubuntu.com/ubuntu jammy/main amd64 python3-passlib all 1.7.4-1 [368 kB]", "Fetched 368 kB in 1s (444 kB/s)", "Selecting previously unselected package python3-passlib.", "(Reading database ... ", "(Reading database ... 5%", "(Reading database ... 10%", "(Reading database ... 15%", "(Reading database ... 20%", "(Reading database ... 25%", "(Reading database ... 30%", "(Reading database ... 35%", "(Reading database ... 40%", "(Reading database ... 45%", "(Reading database ... 50%", "(Reading database ... 55%", "(Reading database ... 60%", "(Reading database ... 65%", "(Reading database ... 70%", "(Reading database ... 75%", "(Reading database ... 80%", "(Reading database ... 85%", "(Reading database ... 90%", "(Reading database ... 95%", "(Reading database ... 100%", "(Reading database ... 111604 files and directories currently installed.)", "Preparing to unpack .../python3-passlib_1.7.4-1_all.deb ...", "Unpacking python3-passlib (1.7.4-1) ...", "Setting up python3-passlib (1.7.4-1) ...", "", "Running kernel seems to be up-to-date.", "", "Services to be restarted:", " systemctl restart cron.service", " systemctl restart fwupd.service", " systemctl restart packagekit.service", " systemctl restart ssh.service", " systemctl restart systemd-journald.service", " /etc/needrestart/restart.d/systemd-manager", " systemctl restart systemd-networkd.service", " systemctl restart systemd-resolved.service", " systemctl restart systemd-timesyncd.service", "", "Service restarts being deferred:", " systemctl restart NetworkManager.service", " systemctl restart networkd-dispatcher.service", " systemctl restart systemd-logind.service", " systemctl restart unattended-upgrades.service", " systemctl restart user@1001.service", "", "No containers need to be restarted.", "", "No user sessions are running outdated binaries.", "", "No VM guests are running outdated hypervisor (qemu) binaries on this host."]}
+
+TASK [Create the APT keyrings directory] ***************************************
+ok: [ubuntu_public] => {"changed": false, "gid": 0, "group": "root", "mode": "0755", "owner": "root", "path": "/etc/apt/keyrings", "size": 4096, "state": "directory", "uid": 0}
+
+TASK [Download the official Docker repository key] *****************************
+ok: [ubuntu_public] => {"changed": false, "checksum_dest": "f5b5bd1487cefc0c53c947e11ca202e86b33dbad", "checksum_src": "f5b5bd1487cefc0c53c947e11ca202e86b33dbad", "dest": "/etc/apt/keyrings/docker.asc", "elapsed": 1, "gid": 0, "group": "root", "md5sum": "1afae06b34a13c1b3d9cb61a26285a15", "mode": "0644", "msg": "OK (3817 bytes)", "owner": "root", "size": 3817, "src": "/root/.ansible/tmp/ansible-moduletmp-1787938305.2223692-azdzqxjj/tmpbto0bvcq", "state": "file", "status_code": 200, "uid": 0, "url": "https://download.docker.com/linux/ubuntu/gpg"}
+
+TASK [Configure the official Docker APT repository] ****************************
+ok: [ubuntu_public] => {"changed": false, "checksum": "651e3c589d95ddf7304031061f8b8a64b6405448", "dest": "/etc/apt/sources.list.d/docker.sources", "gid": 0, "group": "root", "mode": "0644", "owner": "root", "path": "/etc/apt/sources.list.d/docker.sources", "size": 152, "state": "file", "uid": 0}
+
+TASK [Install or update Docker Engine and Compose] *****************************
+ok: [ubuntu_public] => {"cache_update_time": 1787938312, "cache_updated": true, "changed": false}
+
+TASK [Enable and start Docker services] ****************************************
+ok: [ubuntu_public] => (item=containerd) => {"ansible_loop_var": "item", "changed": false, "enabled": true, "item": "containerd", "name": "containerd", "state": "started", "status": {"ActiveEnterTimestamp": "Thu 2026-08-27 10:06:46 UTC", "ActiveEnterTimestampMonotonic": "31302162", "ActiveExitTimestamp": "n/a", "ActiveExitTimestampMonotonic": "0", "ActiveState": "active", "After": "network.target dbus.service basic.target system.slice systemd-journald.socket sysinit.target", "AllowIsolate": "no", "AssertResult": "yes", "AssertTimestamp": "Thu 2026-08-27 10:06:45 UTC", "AssertTimestampMonotonic": "30674823", "Before": "shutdown.target docker.service multi-user.target", "BlockIOAccounting": "no", "BlockIOWeight": "[not set]", "CPUAccounting": "yes", "CPUAffinityFromNUMA": "no", "CPUQuotaPerSecUSec": "infinity", "CPUQuotaPeriodUSec": "infinity", "CPUSchedulingPolicy": "0", "CPUSchedulingPriority": "0", "CPUSchedulingResetOnFork": "no", "CPUShares": "[not set]", "CPUUsageNSec": "1529116741000", "CPUWeight": "[not set]", "CacheDirectoryMode": "0755", "CanFreeze": "yes", "CanIsolate": "no", "CanReload": "no", "CanStart": "yes", "CanStop": "yes", "CapabilityBoundingSet": "cap_chown cap_dac_override cap_dac_read_search cap_fowner cap_fsetid cap_kill cap_setgid cap_setuid cap_setpcap cap_linux_immutable cap_net_bind_service cap_net_broadcast cap_net_admin cap_net_raw cap_ipc_lock cap_ipc_owner cap_sys_module cap_sys_rawio cap_sys_chroot cap_sys_ptrace cap_sys_pacct cap_sys_admin cap_sys_boot cap_sys_nice cap_sys_resource cap_sys_time cap_sys_tty_config cap_mknod cap_lease cap_audit_write cap_audit_control cap_setfcap cap_mac_override cap_mac_admin cap_syslog cap_wake_alarm cap_block_suspend cap_audit_read cap_perfmon cap_bpf cap_checkpoint_restore", "CleanResult": "success", "CollectMode": "inactive", "ConditionResult": "yes", "ConditionTimestamp": "Thu 2026-08-27 10:06:45 UTC", "ConditionTimestampMonotonic": "30674820", "ConfigurationDirectoryMode": "0755", "Conflicts": "shutdown.target", "ControlGroup": "/system.slice/containerd.service", "ControlPID": "0", "CoredumpFilter": "0x33", "DefaultDependencies": "yes", "DefaultMemoryLow": "0", "DefaultMemoryMin": "0", "Delegate": "yes", "DelegateControllers": "cpu cpuacct cpuset io blkio memory devices pids bpf-firewall bpf-devices bpf-foreign bpf-socket-bind", "Description": "containerd container runtime", "DevicePolicy": "auto", "Documentation": "https://containerd.io", "DynamicUser": "no", "EffectiveCPUs": "0-3", "EffectiveMemoryNodes": "0", "ExecMainCode": "0", "ExecMainExitTimestamp": "n/a", "ExecMainExitTimestampMonotonic": "0", "ExecMainPID": "926", "ExecMainStartTimestamp": "Thu 2026-08-27 10:06:46 UTC", "ExecMainStartTimestampMonotonic": "30717721", "ExecMainStatus": "0", "ExecStart": "{ path=/usr/bin/containerd ; argv[]=/usr/bin/containerd ; ignore_errors=no ; start_time=[Thu 2026-08-27 10:06:46 UTC] ; stop_time=[n/a] ; pid=926 ; code=(null) ; status=0/0 }", "ExecStartEx": "{ path=/usr/bin/containerd ; argv[]=/usr/bin/containerd ; flags= ; start_time=[Thu 2026-08-27 10:06:46 UTC] ; stop_time=[n/a] ; pid=926 ; code=(null) ; status=0/0 }", "ExecStartPre": "{ path=/sbin/modprobe ; argv[]=/sbin/modprobe overlay ; ignore_errors=yes ; start_time=[Thu 2026-08-27 10:06:45 UTC] ; stop_time=[Thu 2026-08-27 10:06:46 UTC] ; pid=918 ; code=exited ; status=0 }", "ExecStartPreEx": "{ path=/sbin/modprobe ; argv[]=/sbin/modprobe overlay ; flags=ignore-failure ; start_time=[Thu 2026-08-27 10:06:45 UTC] ; stop_time=[Thu 2026-08-27 10:06:46 UTC] ; pid=918 ; code=exited ; status=0 }", "FailureAction": "none", "FileDescriptorStoreMax": "0", "FinalKillSignal": "9", "FragmentPath": "/lib/systemd/system/containerd.service", "FreezerState": "running", "GID": "[not set]", "GuessMainPID": "yes", "IOAccounting": "no", "IOReadBytes": "18446744073709551615", "IOReadOperations": "18446744073709551615", "IOSchedulingClass": "2", "IOSchedulingPriority": "4", "IOWeight": "[not set]", "IOWriteBytes": "18446744073709551615", "IOWriteOperations": "18446744073709551615", "IPAccounting": "no", "IPEgressBytes": "[no data]", "IPEgressPackets": "[no data]", "IPIngressBytes": "[no data]", "IPIngressPackets": "[no data]", "Id": "containerd.service", "IgnoreOnIsolate": "no", "IgnoreSIGPIPE": "yes", "InactiveEnterTimestamp": "n/a", "InactiveEnterTimestampMonotonic": "0", "InactiveExitTimestamp": "Thu 2026-08-27 10:06:45 UTC", "InactiveExitTimestampMonotonic": "30677200", "InvocationID": "6da274b7e85e404485c729235005579f", "JobRunningTimeoutUSec": "infinity", "JobTimeoutAction": "none", "JobTimeoutUSec": "infinity", "KeyringMode": "private", "KillMode": "process", "KillSignal": "15", "LimitAS": "infinity", "LimitASSoft": "infinity", "LimitCORE": "infinity", "LimitCORESoft": "infinity", "LimitCPU": "infinity", "LimitCPUSoft": "infinity", "LimitDATA": "infinity", "LimitDATASoft": "infinity", "LimitFSIZE": "infinity", "LimitFSIZESoft": "infinity", "LimitLOCKS": "infinity", "LimitLOCKSSoft": "infinity", "LimitMEMLOCK": "65536", "LimitMEMLOCKSoft": "65536", "LimitMSGQUEUE": "819200", "LimitMSGQUEUESoft": "819200", "LimitNICE": "0", "LimitNICESoft": "0", "LimitNOFILE": "524288", "LimitNOFILESoft": "1024", "LimitNPROC": "infinity", "LimitNPROCSoft": "infinity", "LimitRSS": "infinity", "LimitRSSSoft": "infinity", "LimitRTPRIO": "0", "LimitRTPRIOSoft": "0", "LimitRTTIME": "infinity", "LimitRTTIMESoft": "infinity", "LimitSIGPENDING": "15052", "LimitSIGPENDINGSoft": "15052", "LimitSTACK": "infinity", "LimitSTACKSoft": "8388608", "LoadState": "loaded", "LockPersonality": "no", "LogLevelMax": "-1", "LogRateLimitBurst": "0", "LogRateLimitIntervalUSec": "0", "LogsDirectoryMode": "0755", "MainPID": "926", "ManagedOOMMemoryPressure": "auto", "ManagedOOMMemoryPressureLimit": "0", "ManagedOOMPreference": "none", "ManagedOOMSwap": "auto", "MemoryAccounting": "yes", "MemoryAvailable": "infinity", "MemoryCurrent": "983220224", "MemoryDenyWriteExecute": "no", "MemoryHigh": "infinity", "MemoryLimit": "infinity", "MemoryLow": "0", "MemoryMax": "infinity", "MemoryMin": "0", "MemorySwapMax": "infinity", "MountAPIVFS": "no", "NFileDescriptorStore": "0", "NRestarts": "0", "NUMAPolicy": "n/a", "Names": "containerd.service", "NeedDaemonReload": "no", "Nice": "0", "NoNewPrivileges": "no", "NonBlocking": "no", "NotifyAccess": "main", "OOMPolicy": "continue", "OOMScoreAdjust": "-999", "OnFailureJobMode": "replace", "OnSuccessJobMode": "fail", "Perpetual": "no", "PrivateDevices": "no", "PrivateIPC": "no", "PrivateMounts": "no", "PrivateNetwork": "no", "PrivateTmp": "no", "PrivateUsers": "no", "ProcSubset": "all", "ProtectClock": "no", "ProtectControlGroups": "no", "ProtectHome": "no", "ProtectHostname": "no", "ProtectKernelLogs": "no", "ProtectKernelModules": "no", "ProtectKernelTunables": "no", "ProtectProc": "default", "ProtectSystem": "no", "RefuseManualStart": "no", "RefuseManualStop": "no", "ReloadResult": "success", "RemainAfterExit": "no", "RemoveIPC": "no", "Requires": "sysinit.target system.slice", "Restart": "always", "RestartKillSignal": "15", "RestartUSec": "5s", "RestrictNamespaces": "no", "RestrictRealtime": "no", "RestrictSUIDSGID": "no", "Result": "success", "RootDirectoryStartOnly": "no", "RuntimeDirectoryMode": "0755", "RuntimeDirectoryPreserve": "no", "RuntimeMaxUSec": "infinity", "SameProcessGroup": "no", "SecureBits": "0", "SendSIGHUP": "no", "SendSIGKILL": "yes", "Slice": "system.slice", "StandardError": "inherit", "StandardInput": "null", "StandardOutput": "journal", "StartLimitAction": "none", "StartLimitBurst": "5", "StartLimitIntervalUSec": "10s", "StartupBlockIOWeight": "[not set]", "StartupCPUShares": "[not set]", "StartupCPUWeight": "[not set]", "StartupIOWeight": "[not set]", "StateChangeTimestamp": "Thu 2026-08-27 10:06:46 UTC", "StateChangeTimestampMonotonic": "31302162", "StateDirectoryMode": "0755", "StatusErrno": "0", "StopWhenUnneeded": "no", "SubState": "running", "SuccessAction": "none", "SyslogFacility": "3", "SyslogLevel": "6", "SyslogLevelPrefix": "yes", "SyslogPriority": "30", "SystemCallErrorNumber": "2147483646", "TTYReset": "no", "TTYVHangup": "no", "TTYVTDisallocate": "no", "TasksAccounting": "yes", "TasksCurrent": "50", "TasksMax": "infinity", "TimeoutAbortUSec": "1min 30s", "TimeoutCleanUSec": "infinity", "TimeoutStartFailureMode": "terminate", "TimeoutStartUSec": "1min 30s", "TimeoutStopFailureMode": "terminate", "TimeoutStopUSec": "1min 30s", "TimerSlackNSec": "50000", "Transient": "no", "Type": "notify", "UID": "[not set]", "UMask": "0022", "UnitFilePreset": "enabled", "UnitFileState": "enabled", "UtmpMode": "init", "WantedBy": "docker.service multi-user.target", "WatchdogSignal": "6", "WatchdogTimestamp": "n/a", "WatchdogTimestampMonotonic": "0", "WatchdogUSec": "0"}}
+ok: [ubuntu_public] => (item=docker) => {"ansible_loop_var": "item", "changed": false, "enabled": true, "item": "docker", "name": "docker", "state": "started", "status": {"ActiveEnterTimestamp": "Thu 2026-08-27 10:06:50 UTC", "ActiveEnterTimestampMonotonic": "35453116", "ActiveExitTimestamp": "n/a", "ActiveExitTimestampMonotonic": "0", "ActiveState": "active", "After": "network-online.target nss-lookup.target docker.socket system.slice systemd-journald.socket sysinit.target containerd.service basic.target time-set.target firewalld.service", "AllowIsolate": "no", "AssertResult": "yes", "AssertTimestamp": "Thu 2026-08-27 10:06:46 UTC", "AssertTimestampMonotonic": "31356908", "Before": "shutdown.target multi-user.target", "BlockIOAccounting": "no", "BlockIOWeight": "[not set]", "CPUAccounting": "yes", "CPUAffinityFromNUMA": "no", "CPUQuotaPerSecUSec": "infinity", "CPUQuotaPeriodUSec": "infinity", "CPUSchedulingPolicy": "0", "CPUSchedulingPriority": "0", "CPUSchedulingResetOnFork": "no", "CPUShares": "[not set]", "CPUUsageNSec": "373122640000", "CPUWeight": "[not set]", "CacheDirectoryMode": "0755", "CanFreeze": "yes", "CanIsolate": "no", "CanReload": "yes", "CanStart": "yes", "CanStop": "yes", "CapabilityBoundingSet": "cap_chown cap_dac_override cap_dac_read_search cap_fowner cap_fsetid cap_kill cap_setgid cap_setuid cap_setpcap cap_linux_immutable cap_net_bind_service cap_net_broadcast cap_net_admin cap_net_raw cap_ipc_lock cap_ipc_owner cap_sys_module cap_sys_rawio cap_sys_chroot cap_sys_ptrace cap_sys_pacct cap_sys_admin cap_sys_boot cap_sys_nice cap_sys_resource cap_sys_time cap_sys_tty_config cap_mknod cap_lease cap_audit_write cap_audit_control cap_setfcap cap_mac_override cap_mac_admin cap_syslog cap_wake_alarm cap_block_suspend cap_audit_read cap_perfmon cap_bpf cap_checkpoint_restore", "CleanResult": "success", "CollectMode": "inactive", "ConditionResult": "yes", "ConditionTimestamp": "Thu 2026-08-27 10:06:46 UTC", "ConditionTimestampMonotonic": "31356903", "ConfigurationDirectoryMode": "0755", "Conflicts": "shutdown.target", "ControlGroup": "/system.slice/docker.service", "ControlPID": "0", "CoredumpFilter": "0x33", "DefaultDependencies": "yes", "DefaultMemoryLow": "0", "DefaultMemoryMin": "0", "Delegate": "yes", "DelegateControllers": "cpu cpuacct cpuset io blkio memory devices pids bpf-firewall bpf-devices bpf-foreign bpf-socket-bind", "Description": "Docker Application Container Engine", "DevicePolicy": "auto", "Documentation": "https://docs.docker.com", "DynamicUser": "no", "EffectiveCPUs": "0-3", "EffectiveMemoryNodes": "0", "ExecMainCode": "0", "ExecMainExitTimestamp": "n/a", "ExecMainExitTimestampMonotonic": "0", "ExecMainPID": "1026", "ExecMainStartTimestamp": "Thu 2026-08-27 10:06:46 UTC", "ExecMainStartTimestampMonotonic": "31360767", "ExecMainStatus": "0", "ExecReload": "{ path=/bin/kill ; argv[]=/bin/kill -s HUP $MAINPID ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }", "ExecReloadEx": "{ path=/bin/kill ; argv[]=/bin/kill -s HUP $MAINPID ; flags= ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }", "ExecStart": "{ path=/usr/bin/dockerd ; argv[]=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock ; ignore_errors=no ; start_time=[Thu 2026-08-27 10:06:46 UTC] ; stop_time=[n/a] ; pid=1026 ; code=(null) ; status=0/0 }", "ExecStartEx": "{ path=/usr/bin/dockerd ; argv[]=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock ; flags= ; start_time=[Thu 2026-08-27 10:06:46 UTC] ; stop_time=[n/a] ; pid=1026 ; code=(null) ; status=0/0 }", "FailureAction": "none", "FileDescriptorStoreMax": "0", "FinalKillSignal": "9", "FragmentPath": "/lib/systemd/system/docker.service", "FreezerState": "running", "GID": "[not set]", "GuessMainPID": "yes", "IOAccounting": "no", "IOReadBytes": "18446744073709551615", "IOReadOperations": "18446744073709551615", "IOSchedulingClass": "2", "IOSchedulingPriority": "4", "IOWeight": "[not set]", "IOWriteBytes": "18446744073709551615", "IOWriteOperations": "18446744073709551615", "IPAccounting": "no", "IPEgressBytes": "[no data]", "IPEgressPackets": "[no data]", "IPIngressBytes": "[no data]", "IPIngressPackets": "[no data]", "Id": "docker.service", "IgnoreOnIsolate": "no", "IgnoreSIGPIPE": "yes", "InactiveEnterTimestamp": "n/a", "InactiveEnterTimestampMonotonic": "0", "InactiveExitTimestamp": "Thu 2026-08-27 10:06:46 UTC", "InactiveExitTimestampMonotonic": "31361486", "InvocationID": "7919522b63fb4d57aa57a7ce6f9a0dab", "JobRunningTimeoutUSec": "infinity", "JobTimeoutAction": "none", "JobTimeoutUSec": "infinity", "KeyringMode": "private", "KillMode": "process", "KillSignal": "15", "LimitAS": "infinity", "LimitASSoft": "infinity", "LimitCORE": "infinity", "LimitCORESoft": "infinity", "LimitCPU": "infinity", "LimitCPUSoft": "infinity", "LimitDATA": "infinity", "LimitDATASoft": "infinity", "LimitFSIZE": "infinity", "LimitFSIZESoft": "infinity", "LimitLOCKS": "infinity", "LimitLOCKSSoft": "infinity", "LimitMEMLOCK": "65536", "LimitMEMLOCKSoft": "65536", "LimitMSGQUEUE": "819200", "LimitMSGQUEUESoft": "819200", "LimitNICE": "0", "LimitNICESoft": "0", "LimitNOFILE": "524288", "LimitNOFILESoft": "1024", "LimitNPROC": "infinity", "LimitNPROCSoft": "infinity", "LimitRSS": "infinity", "LimitRSSSoft": "infinity", "LimitRTPRIO": "0", "LimitRTPRIOSoft": "0", "LimitRTTIME": "infinity", "LimitRTTIMESoft": "infinity", "LimitSIGPENDING": "15052", "LimitSIGPENDINGSoft": "15052", "LimitSTACK": "infinity", "LimitSTACKSoft": "8388608", "LoadState": "loaded", "LockPersonality": "no", "LogLevelMax": "-1", "LogRateLimitBurst": "0", "LogRateLimitIntervalUSec": "0", "LogsDirectoryMode": "0755", "MainPID": "1026", "ManagedOOMMemoryPressure": "auto", "ManagedOOMMemoryPressureLimit": "0", "ManagedOOMPreference": "none", "ManagedOOMSwap": "auto", "MemoryAccounting": "yes", "MemoryAvailable": "infinity", "MemoryCurrent": "283013120", "MemoryDenyWriteExecute": "no", "MemoryHigh": "infinity", "MemoryLimit": "infinity", "MemoryLow": "0", "MemoryMax": "infinity", "MemoryMin": "0", "MemorySwapMax": "infinity", "MountAPIVFS": "no", "NFileDescriptorStore": "0", "NRestarts": "0", "NUMAPolicy": "n/a", "Names": "docker.service", "NeedDaemonReload": "no", "Nice": "0", "NoNewPrivileges": "no", "NonBlocking": "no", "NotifyAccess": "main", "OOMPolicy": "continue", "OOMScoreAdjust": "-500", "OnFailureJobMode": "replace", "OnSuccessJobMode": "fail", "Perpetual": "no", "PrivateDevices": "no", "PrivateIPC": "no", "PrivateMounts": "no", "PrivateNetwork": "no", "PrivateTmp": "no", "PrivateUsers": "no", "ProcSubset": "all", "ProtectClock": "no", "ProtectControlGroups": "no", "ProtectHome": "no", "ProtectHostname": "no", "ProtectKernelLogs": "no", "ProtectKernelModules": "no", "ProtectKernelTunables": "no", "ProtectProc": "default", "ProtectSystem": "no", "RefuseManualStart": "no", "RefuseManualStop": "no", "ReloadResult": "success", "RemainAfterExit": "no", "RemoveIPC": "no", "Requires": "docker.socket sysinit.target system.slice", "Restart": "always", "RestartKillSignal": "15", "RestartUSec": "2s", "RestrictNamespaces": "no", "RestrictRealtime": "no", "RestrictSUIDSGID": "no", "Result": "success", "RootDirectoryStartOnly": "no", "RuntimeDirectoryMode": "0755", "RuntimeDirectoryPreserve": "no", "RuntimeMaxUSec": "infinity", "SameProcessGroup": "no", "SecureBits": "0", "SendSIGHUP": "no", "SendSIGKILL": "yes", "Slice": "system.slice", "StandardError": "inherit", "StandardInput": "null", "StandardOutput": "journal", "StartLimitAction": "none", "StartLimitBurst": "3", "StartLimitIntervalUSec": "1min", "StartupBlockIOWeight": "[not set]", "StartupCPUShares": "[not set]", "StartupCPUWeight": "[not set]", "StartupIOWeight": "[not set]", "StateChangeTimestamp": "Thu 2026-08-27 10:06:50 UTC", "StateChangeTimestampMonotonic": "35453116", "StateDirectoryMode": "0755", "StatusErrno": "0", "StopWhenUnneeded": "no", "SubState": "running", "SuccessAction": "none", "SyslogFacility": "3", "SyslogLevel": "6", "SyslogLevelPrefix": "yes", "SyslogPriority": "30", "SystemCallErrorNumber": "2147483646", "TTYReset": "no", "TTYVHangup": "no", "TTYVTDisallocate": "no", "TasksAccounting": "yes", "TasksCurrent": "31", "TasksMax": "infinity", "TimeoutAbortUSec": "1min 30s", "TimeoutCleanUSec": "infinity", "TimeoutStartFailureMode": "terminate", "TimeoutStartUSec": "infinity", "TimeoutStopFailureMode": "terminate", "TimeoutStopUSec": "1min 30s", "TimerSlackNSec": "50000", "Transient": "no", "TriggeredBy": "docker.socket", "Type": "notify", "UID": "[not set]", "UMask": "0022", "UnitFilePreset": "enabled", "UnitFileState": "enabled", "UtmpMode": "init", "WantedBy": "multi-user.target", "Wants": "containerd.service network-online.target", "WatchdogSignal": "6", "WatchdogTimestamp": "n/a", "WatchdogTimestampMonotonic": "0", "WatchdogUSec": "0"}}
+
+TASK [Add the deployment user to the Docker group] *****************************
+ok: [ubuntu_public] => {"append": true, "changed": false, "comment": "Naser Rahmati,222,,", "group": 1001, "groups": "sudo,docker", "home": "/home/rahmati", "move_home": false, "name": "rahmati", "shell": "/bin/bash", "state": "present", "uid": 1001}
+
+TASK [Allow SSH through UFW] ***************************************************
+ok: [ubuntu_public] => {"changed": false, "commands": ["/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules", "/usr/sbin/ufw --version", "/usr/sbin/ufw allow from any to any port 22 proto tcp comment 'SSH'", "/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules"], "msg": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW IN    Anywhere                   # SSH\n80/tcp                     ALLOW IN    Anywhere                   # HTTP for Nginx container\n443/tcp                    ALLOW IN    Anywhere                   # HTTPS for Nginx container\n22/tcp (v6)                ALLOW IN    Anywhere (v6)              # SSH\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # HTTP for Nginx container\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # HTTPS for Nginx container"}
+
+TASK [Allow ArvanCloud origin HTTP through UFW] ********************************
+changed: [ubuntu_public] => {"changed": true, "commands": ["/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules", "/usr/sbin/ufw --version", "/usr/sbin/ufw allow from any to any port 80 proto tcp comment 'ArvanCloud origin HTTP'", "/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules"], "msg": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW IN    Anywhere                   # SSH\n80/tcp                     ALLOW IN    Anywhere                   # ArvanCloud origin HTTP\n443/tcp                    ALLOW IN    Anywhere                   # HTTPS for Nginx container\n22/tcp (v6)                ALLOW IN    Anywhere (v6)              # SSH\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # ArvanCloud origin HTTP\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # HTTPS for Nginx container"}
+
+TASK [Set the default incoming policy] *****************************************
+ok: [ubuntu_public] => {"changed": false, "commands": ["/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules", "/usr/sbin/ufw default deny incoming", "/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules"], "msg": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW IN    Anywhere                   # SSH\n80/tcp                     ALLOW IN    Anywhere                   # ArvanCloud origin HTTP\n443/tcp                    ALLOW IN    Anywhere                   # HTTPS for Nginx container\n22/tcp (v6)                ALLOW IN    Anywhere (v6)              # SSH\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # ArvanCloud origin HTTP\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # HTTPS for Nginx container"}
+
+TASK [Set the default outgoing policy] *****************************************
+ok: [ubuntu_public] => {"changed": false, "commands": ["/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules", "/usr/sbin/ufw default allow outgoing", "/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules"], "msg": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW IN    Anywhere                   # SSH\n80/tcp                     ALLOW IN    Anywhere                   # ArvanCloud origin HTTP\n443/tcp                    ALLOW IN    Anywhere                   # HTTPS for Nginx container\n22/tcp (v6)                ALLOW IN    Anywhere (v6)              # SSH\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # ArvanCloud origin HTTP\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # HTTPS for Nginx container"}
+
+TASK [Enable UFW] **************************************************************
+ok: [ubuntu_public] => {"changed": false, "commands": ["/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules", "/usr/sbin/ufw -f enable", "/usr/sbin/ufw logging low", "/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules"], "msg": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW IN    Anywhere                   # SSH\n80/tcp                     ALLOW IN    Anywhere                   # ArvanCloud origin HTTP\n443/tcp                    ALLOW IN    Anywhere                   # HTTPS for Nginx container\n22/tcp (v6)                ALLOW IN    Anywhere (v6)              # SSH\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # ArvanCloud origin HTTP\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # HTTPS for Nginx container"}
+
+TASK [Read the installed Docker Compose version] *******************************
+ok: [ubuntu_public] => {"changed": false, "changed_when_result": false, "cmd": ["docker", "compose", "version"], "delta": "0:00:00.219025", "end": "2026-08-28 17:32:16.576292", "msg": "", "rc": 0, "start": "2026-08-28 17:32:16.357267", "stderr": "", "stderr_lines": [], "stdout": "Docker Compose version v5.5.0", "stdout_lines": ["Docker Compose version v5.5.0"]}
+
+TASK [Display Docker versions] *************************************************
+ok: [ubuntu_public] => {
+    "msg": [
+        "Docker service is active.",
+        "Docker Compose version v5.5.0"
+    ]
+}
+
+PLAY [Deploy the SEO Auditor origin behind ArvanCloud] *************************
+
+TASK [Fetch the current ArvanCloud edge IP list] *******************************
+ok: [ubuntu_public -> localhost] => {"cache_control": "max-age=0", "changed": false, "changed_when_result": false, "connection": "close", "content": "185.143.232.0/22\n188.229.116.16/30\n94.101.182.0/27\n2.144.3.128/28\n37.32.16.0/27\n37.32.17.0/27\n37.32.18.0/27\n37.32.19.0/27\n185.215.232.0/22\n178.131.120.48/28\n94.101.183.0/28\n78.157.36.112/28\n95.38.61.80/28", "content_type": "text/plain; charset=utf-8", "cookies": {"XSRF-TOKEN": "eyJpdiI6IjF1NHZBRjhjL2VhRUF4eWJYVWZZNWc9PSIsInZhbHVlIjoiYk1HZmNqWTd6NE8xSUJYSE8reDI4dnRuU1NsR0srQkhHUGlNOXh3QU1NbXhUVzFnQ09NUjUxOUJ1aVFJZnAyc09hNTRNaURZQ21kbzVyYWdiUkZxZ2pCMUFrdE10QWZwaGpxeGxYdmltMjRmWjRxa0x0aHE0MmhvUFlKUTZMVm0iLCJtYWMiOiJiMjI0NDYwOWNkZjg4ZjQ0MTgxNzMyMjYxOWJkODc0MGI3MDgyMzVjNzllYjhmOWZmZTYyMDJjNmZmNTA0OGRlIiwidGFnIjoiIn0%3D", "arvan_session": "eyJpdiI6ImFOY2twRkx4OVZ1bzZ3TGRxUWJRYUE9PSIsInZhbHVlIjoiMGFaZXJDMHkxZnB2VWVnSUNxdFBMWmdsUlZNWk0zYmNDSGRkT1MwUEpEZHBMTzA0aXpzV01pazNMamMrNmVSbmcrNFNTSGQ5ZEJucXFQTnBMWnoyMUpMZm5QcnhmenEvOXRlWG5hU3JxcmVmb3dDenlnSzBNcFF4bUdJcVlvaEIiLCJtYWMiOiJiMWUzYjVkYjk1NzQ0Njg2ZGYxNjU0OTk2ODczNDQ3MDQ5ODM3Zjg2MzkzYmRlYjNmZmNjNGExM2YwMjMzOGFlIiwidGFnIjoiIn0%3D", "lang": "en"}, "cookies_string": "XSRF-TOKEN=eyJpdiI6IjF1NHZBRjhjL2VhRUF4eWJYVWZZNWc9PSIsInZhbHVlIjoiYk1HZmNqWTd6NE8xSUJYSE8reDI4dnRuU1NsR0srQkhHUGlNOXh3QU1NbXhUVzFnQ09NUjUxOUJ1aVFJZnAyc09hNTRNaURZQ21kbzVyYWdiUkZxZ2pCMUFrdE10QWZwaGpxeGxYdmltMjRmWjRxa0x0aHE0MmhvUFlKUTZMVm0iLCJtYWMiOiJiMjI0NDYwOWNkZjg4ZjQ0MTgxNzMyMjYxOWJkODc0MGI3MDgyMzVjNzllYjhmOWZmZTYyMDJjNmZmNTA0OGRlIiwidGFnIjoiIn0%3D; arvan_session=eyJpdiI6ImFOY2twRkx4OVZ1bzZ3TGRxUWJRYUE9PSIsInZhbHVlIjoiMGFaZXJDMHkxZnB2VWVnSUNxdFBMWmdsUlZNWk0zYmNDSGRkT1MwUEpEZHBMTzA0aXpzV01pazNMamMrNmVSbmcrNFNTSGQ5ZEJucXFQTnBMWnoyMUpMZm5QcnhmenEvOXRlWG5hU3JxcmVmb3dDenlnSzBNcFF4bUdJcVlvaEIiLCJtYWMiOiJiMWUzYjVkYjk1NzQ0Njg2ZGYxNjU0OTk2ODczNDQ3MDQ5ODM3Zjg2MzkzYmRlYjNmZmNjNGExM2YwMjMzOGFlIiwidGFnIjoiIn0%3D; lang=en", "date": "Fri, 28 Aug 2026 17:32:17 GMT", "elapsed": 0, "expires": "Fri, 28 Aug 2026 17:32:17 GMT", "failed_when_result": false, "msg": "OK (unknown bytes)", "redirected": false, "server": "ArvanCloud", "server_timing": "total;dur=0", "set_cookie": "XSRF-TOKEN=eyJpdiI6IjF1NHZBRjhjL2VhRUF4eWJYVWZZNWc9PSIsInZhbHVlIjoiYk1HZmNqWTd6NE8xSUJYSE8reDI4dnRuU1NsR0srQkhHUGlNOXh3QU1NbXhUVzFnQ09NUjUxOUJ1aVFJZnAyc09hNTRNaURZQ21kbzVyYWdiUkZxZ2pCMUFrdE10QWZwaGpxeGxYdmltMjRmWjRxa0x0aHE0MmhvUFlKUTZMVm0iLCJtYWMiOiJiMjI0NDYwOWNkZjg4ZjQ0MTgxNzMyMjYxOWJkODc0MGI3MDgyMzVjNzllYjhmOWZmZTYyMDJjNmZmNTA0OGRlIiwidGFnIjoiIn0%3D; expires=Fri, 28 Aug 2026 17:01:03 GMT; Max-Age=7200; path=/, arvan_session=eyJpdiI6ImFOY2twRkx4OVZ1bzZ3TGRxUWJRYUE9PSIsInZhbHVlIjoiMGFaZXJDMHkxZnB2VWVnSUNxdFBMWmdsUlZNWk0zYmNDSGRkT1MwUEpEZHBMTzA0aXpzV01pazNMamMrNmVSbmcrNFNTSGQ5ZEJucXFQTnBMWnoyMUpMZm5QcnhmenEvOXRlWG5hU3JxcmVmb3dDenlnSzBNcFF4bUdJcVlvaEIiLCJtYWMiOiJiMWUzYjVkYjk1NzQ0Njg2ZGYxNjU0OTk2ODczNDQ3MDQ5ODM3Zjg2MzkzYmRlYjNmZmNjNGExM2YwMjMzOGFlIiwidGFnIjoiIn0%3D; expires=Fri, 28 Aug 2026 17:01:03 GMT; Max-Age=7200; path=/; httponly, lang=en; expires=Mon, 07 Sep 2026 15:01:03 GMT; Max-Age=864000; path=/; secure; httponly", "status": 200, "strict_transport_security": "max-age=15724800; includeSubDomains", "transfer_encoding": "chunked", "url": "https://www.arvancloud.ir/en/ips.txt", "vary": "Accept-Encoding, Accept-Encoding", "x_cache": "HIT", "x_request_id": "c81fd8a79880e441583e6f5c01828d53", "x_sid": "2091", "x_xss_protection": "1; mode=block"}
+
+TASK [Parse the current ArvanCloud CIDR list] **********************************
+ok: [ubuntu_public] => {"ansible_facts": {"arvan_cdn_cidrs": ["185.143.232.0/22", "188.229.116.16/30", "94.101.182.0/27", "2.144.3.128/28", "37.32.16.0/27", "37.32.17.0/27", "37.32.18.0/27", "37.32.19.0/27", "185.215.232.0/22", "178.131.120.48/28", "94.101.183.0/28", "78.157.36.112/28", "95.38.61.80/28"]}, "changed": false}
+
+TASK [Use the bundled ArvanCloud CIDR fallback list] ***************************
+skipping: [ubuntu_public] => {"changed": false, "false_condition": "arvan_cdn_cidrs is not defined or arvan_cdn_cidrs | length == 0", "skip_reason": "Conditional result was False"}
+
+TASK [Create the local secret directory on the Controller] *********************
+changed: [ubuntu_public -> localhost] => {"changed": true, "gid": 1002, "group": "naser", "mode": "0700", "owner": "naser", "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/.secrets", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 6, "state": "directory", "uid": 1002}
+
+TASK [Create or retrieve the Basic Auth password on the Controller] ************
+ok: [ubuntu_public] => {"censored": "the output has been hidden due to the fact that 'no_log: true' was specified for this result", "changed": false}
+
+TASK [Enforce the local Basic Auth password file permissions] ******************
+ok: [ubuntu_public -> localhost] => {"changed": false, "gid": 1002, "group": "naser", "mode": "0600", "owner": "naser", "path": "/home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/.secrets/basic_auth_password", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 25, "state": "file", "uid": 1002}
+
+TASK [Create the host group matching the backend GID] **************************
+ok: [ubuntu_public] => {"changed": false, "gid": 10001, "name": "appcontainer", "state": "present", "system": false}
+
+TASK [Create deployment directories] *******************************************
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor', 'owner': 'rahmati', 'group': 'rahmati', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": false, "gid": 1001, "group": "rahmati", "item": {"group": "rahmati", "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor"}, "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor", "size": 4096, "state": "directory", "uid": 1001}
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor/app', 'owner': 'rahmati', 'group': 'rahmati', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": false, "gid": 1001, "group": "rahmati", "item": {"group": "rahmati", "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor/app"}, "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor/app", "size": 4096, "state": "directory", "uid": 1001}
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor/app/templates', 'owner': 'rahmati', 'group': 'rahmati', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": false, "gid": 1001, "group": "rahmati", "item": {"group": "rahmati", "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor/app/templates"}, "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor/app/templates", "size": 4096, "state": "directory", "uid": 1001}
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor/nginx', 'owner': 'rahmati', 'group': 'rahmati', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": false, "gid": 1001, "group": "rahmati", "item": {"group": "rahmati", "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor/nginx"}, "mode": "0755", "owner": "rahmati", "path": "/opt/seo-auditor/nginx", "size": 4096, "state": "directory", "uid": 1001}
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor/secrets', 'owner': 'root', 'group': 'appcontainer', 'mode': '0750'}) => {"ansible_loop_var": "item", "changed": false, "gid": 10001, "group": "appcontainer", "item": {"group": "appcontainer", "mode": "0750", "owner": "root", "path": "/opt/seo-auditor/secrets"}, "mode": "0750", "owner": "root", "path": "/opt/seo-auditor/secrets", "size": 4096, "state": "directory", "uid": 0}
+
+TASK [Copy the Dockerfile and Docker build exclusions] *************************
+ok: [ubuntu_public] => (item=Dockerfile) => {"ansible_loop_var": "item", "changed": false, "checksum": "bebab97dee57ade9beb0109c9648fdf63c843ef8", "dest": "/opt/seo-auditor/Dockerfile", "gid": 1001, "group": "rahmati", "item": "Dockerfile", "mode": "0644", "owner": "rahmati", "path": "/opt/seo-auditor/Dockerfile", "size": 905, "state": "file", "uid": 1001}
+ok: [ubuntu_public] => (item=.dockerignore) => {"ansible_loop_var": "item", "changed": false, "checksum": "b8aa6fcd5f25e50eec532aa074c12d0fff5c7f88", "dest": "/opt/seo-auditor/.dockerignore", "gid": 1001, "group": "rahmati", "item": ".dockerignore", "mode": "0644", "owner": "rahmati", "path": "/opt/seo-auditor/.dockerignore", "size": 206, "state": "file", "uid": 1001}
+
+TASK [Copy the SEO Auditor application] ****************************************
+ok: [ubuntu_public] => {"changed": false, "dest": "/opt/seo-auditor/app/", "src": "/home/naser/naserrahmati_kubernetes_02/04_docker/app/"}
+
+TASK [Render the public environment file] **************************************
+changed: [ubuntu_public] => {"changed": true, "checksum": "cca06fe572ad997ac6ee2a7053d6e1c20a34ade7", "dest": "/opt/seo-auditor/.env", "gid": 1001, "group": "rahmati", "md5sum": "8761384686e938651e894e7ef392e9e2", "mode": "0640", "owner": "rahmati", "size": 373, "src": "/home/rahmati/.ansible/tmp/ansible-tmp-1787938353.825666-403973-135713985057430/.source", "state": "file", "uid": 1001}
+
+TASK [Render the ArvanCloud-aware Docker Compose file] *************************
+changed: [ubuntu_public] => {"changed": true, "checksum": "81d6e2cf83e5216ffe691aad7adeaf9ff545e55a", "dest": "/opt/seo-auditor/docker-compose.yml", "gid": 1001, "group": "rahmati", "md5sum": "96adbd0c93ace6780347388b0cba4a3e", "mode": "0644", "owner": "rahmati", "size": 2468, "src": "/home/rahmati/.ansible/tmp/ansible-tmp-1787938356.080005-404024-153565219657869/.source.yml", "state": "file", "uid": 1001}
+
+TASK [Render the trusted ArvanCloud real-IP configuration] *********************
+changed: [ubuntu_public] => {"changed": true, "checksum": "41fa0c9b6d7a21fc3dc7fddc8087e44ee9148344", "dest": "/opt/seo-auditor/nginx/00-arvan-realip.conf", "gid": 1001, "group": "rahmati", "md5sum": "1ba4f16931bf95a2305f0096c402c62c", "mode": "0644", "owner": "rahmati", "size": 1101, "src": "/home/rahmati/.ansible/tmp/ansible-tmp-1787938358.025236-404035-35099354038349/.source.conf", "state": "file", "uid": 1001}
+
+TASK [Render the SEO Auditor Nginx virtual host] *******************************
+changed: [ubuntu_public] => {"changed": true, "checksum": "d0ee17b933fcc5d0852c441e7762dccfb63a5e2e", "dest": "/opt/seo-auditor/nginx/10-seo-auditor.conf", "gid": 1001, "group": "rahmati", "md5sum": "b6daa332fadd2ce6b938d2e01f95bbd4", "mode": "0644", "owner": "rahmati", "size": 2502, "src": "/home/rahmati/.ansible/tmp/ansible-tmp-1787938359.911729-404044-221687822781197/.source.conf", "state": "file", "uid": 1001}
+
+TASK [Check whether the database password already exists] **********************
+ok: [ubuntu_public] => {"changed": false, "stat": {"atime": 1787896122.8909292, "attr_flags": "e", "attributes": ["extents"], "block_size": 4096, "blocks": 8, "charset": "us-ascii", "checksum": "669526910aed69f5d8820371b92f8e86ec8da977", "ctime": 1787896122.8949292, "dev": 64768, "device_type": 0, "disk_usage_bytes": 4096, "executable": false, "exists": true, "gid": 10001, "gr_name": "appcontainer", "inode": 524324, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/plain", "mode": "0640", "mtime": 1787896122.166929, "nlink": 1, "path": "/opt/seo-auditor/secrets/db_password.txt", "pw_name": "root", "readable": true, "rgrp": true, "roth": false, "rusr": true, "size": 48, "uid": 0, "version": "301268657", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+
+TASK [Generate the database password] ******************************************
+skipping: [ubuntu_public] => {"censored": "the output has been hidden due to the fact that 'no_log: true' was specified for this result", "changed": false}
+
+TASK [Write the database password securely] ************************************
+skipping: [ubuntu_public] => {"censored": "the output has been hidden due to the fact that 'no_log: true' was specified for this result", "changed": false}
+
+TASK [Enforce database password ownership and permissions] *********************
+ok: [ubuntu_public] => {"changed": false, "gid": 10001, "group": "appcontainer", "mode": "0640", "owner": "root", "path": "/opt/seo-auditor/secrets/db_password.txt", "size": 48, "state": "file", "uid": 0}
+
+TASK [Create the Nginx Basic Auth file] ****************************************
+changed: [ubuntu_public] => {"censored": "the output has been hidden due to the fact that 'no_log: true' was specified for this result", "changed": true}
+
+TASK [Write the generated access credentials on the Controller] ****************
+changed: [ubuntu_public -> localhost] => {"censored": "the output has been hidden due to the fact that 'no_log: true' was specified for this result", "changed": true}
+
+TASK [Check for the bootstrap Nginx Compose project] ***************************
+ok: [ubuntu_public] => {"changed": false, "stat": {"atime": 1787824205.1655207, "attr_flags": "e", "attributes": ["extents"], "block_size": 4096, "blocks": 8, "charset": "us-ascii", "checksum": "bd162e227f8d3345fcff6bb611bf5d2bcb1d048d", "ctime": 1787824203.0215173, "dev": 64768, "device_type": 0, "disk_usage_bytes": 4096, "executable": false, "exists": true, "gid": 0, "gr_name": "root", "inode": 524314, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/plain", "mode": "0644", "mtime": 1787824202.245516, "nlink": 1, "path": "/opt/bootstrap-nginx/compose.yml", "pw_name": "root", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 141, "uid": 0, "version": "3658420590", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+
+TASK [Stop and remove the bootstrap Nginx Compose project] *********************
+changed: [ubuntu_public] => {"changed": true, "changed_when_result": true, "cmd": ["docker", "compose", "-f", "/opt/bootstrap-nginx/compose.yml", "down", "--remove-orphans"], "delta": "0:00:00.288163", "end": "2026-08-28 17:32:47.995622", "msg": "", "rc": 0, "start": "2026-08-28 17:32:47.707459", "stderr": "", "stderr_lines": [], "stdout": "", "stdout_lines": []}
+
+TASK [Check for an unmanaged bootstrap-nginx container] ************************
+ok: [ubuntu_public] => {"changed": false, "changed_when_result": false, "cmd": ["docker", "inspect", "bootstrap-nginx"], "delta": "0:00:00.102723", "end": "2026-08-28 17:32:48.852294", "failed_when_result": false, "failed_when_suppressed_exception": "(traceback unavailable)", "msg": "The command exited with a non-zero return code.", "rc": 1, "start": "2026-08-28 17:32:48.749571", "stderr": "error: no such object: bootstrap-nginx", "stderr_lines": ["error: no such object: bootstrap-nginx"], "stdout": "[]", "stdout_lines": ["[]"]}
+
+TASK [Remove an unmanaged bootstrap-nginx container] ***************************
+skipping: [ubuntu_public] => {"changed": false, "false_condition": "unmanaged_bootstrap_container.rc == 0", "skip_reason": "Conditional result was False"}
+
+TASK [Validate the Docker Compose configuration] *******************************
+ok: [ubuntu_public] => {"changed": false, "changed_when_result": false, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "config", "--quiet"], "delta": "0:00:00.270962", "end": "2026-08-28 17:32:50.028874", "msg": "", "rc": 0, "start": "2026-08-28 17:32:49.757912", "stderr": "", "stderr_lines": [], "stdout": "", "stdout_lines": []}
+
+TASK [Probe Compose image metadata for stale references] ***********************
+ok: [ubuntu_public] => {"changed": false, "changed_when_result": false, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "images", "--format", "json"], "delta": "0:00:00.577152", "end": "2026-08-28 17:32:51.410305", "failed_when_result": false, "msg": "", "rc": 0, "start": "2026-08-28 17:32:50.833153", "stderr": "", "stderr_lines": [], "stdout": "[{\"ID\":\"sha256:fe1682cf05e857d257639085d8460c5a458b7e6b35658ce150fda31c50cd05e4\",\"ContainerName\":\"seo-auditor-public-backend-1\",\"Repository\":\"nginx-flask-mysql-backend\",\"Tag\":\"1.1\",\"Platform\":\"linux/amd64\",\"Size\":84027700,\"Created\":\"2026-08-28T05:50:26.724766188Z\",\"LastTagTime\":\"2026-08-28T05:50:40.174591991Z\"},{\"ID\":\"sha256:8020e05c4c498d06c87f0a1db010eb79bd6f8fb30e9b763d4690c34ce1e61008\",\"ContainerName\":\"seo-auditor-public-db-1\",\"Repository\":\"mariadb\",\"Tag\":\"10.11.18-jammy\",\"Platform\":\"linux/amd64\",\"Size\":104059442,\"Created\":\"2026-08-18T01:19:25.621743673Z\",\"LastTagTime\":\"2026-08-28T05:49:21.601335267Z\"},{\"ID\":\"sha256:97d490c12ba55b4946b01546d1c3ed324e8d41ab1c9fcb2a616aa470620e5b46\",\"ContainerName\":\"seo-auditor-public-proxy-1\",\"Repository\":\"nginx\",\"Tag\":\"1.30.4-alpine\",\"Platform\":\"linux/amd64\",\"Size\":26064016,\"Created\":\"2026-07-15T23:57:51.949087551Z\",\"LastTagTime\":\"2026-08-28T05:48:57.46864779Z\"}]", "stdout_lines": ["[{\"ID\":\"sha256:fe1682cf05e857d257639085d8460c5a458b7e6b35658ce150fda31c50cd05e4\",\"ContainerName\":\"seo-auditor-public-backend-1\",\"Repository\":\"nginx-flask-mysql-backend\",\"Tag\":\"1.1\",\"Platform\":\"linux/amd64\",\"Size\":84027700,\"Created\":\"2026-08-28T05:50:26.724766188Z\",\"LastTagTime\":\"2026-08-28T05:50:40.174591991Z\"},{\"ID\":\"sha256:8020e05c4c498d06c87f0a1db010eb79bd6f8fb30e9b763d4690c34ce1e61008\",\"ContainerName\":\"seo-auditor-public-db-1\",\"Repository\":\"mariadb\",\"Tag\":\"10.11.18-jammy\",\"Platform\":\"linux/amd64\",\"Size\":104059442,\"Created\":\"2026-08-18T01:19:25.621743673Z\",\"LastTagTime\":\"2026-08-28T05:49:21.601335267Z\"},{\"ID\":\"sha256:97d490c12ba55b4946b01546d1c3ed324e8d41ab1c9fcb2a616aa470620e5b46\",\"ContainerName\":\"seo-auditor-public-proxy-1\",\"Repository\":\"nginx\",\"Tag\":\"1.30.4-alpine\",\"Platform\":\"linux/amd64\",\"Size\":26064016,\"Created\":\"2026-07-15T23:57:51.949087551Z\",\"LastTagTime\":\"2026-08-28T05:48:57.46864779Z\"}]"]}
+
+TASK [Remove stale Compose containers without deleting volumes] ****************
+skipping: [ubuntu_public] => {"changed": false, "false_condition": "compose_image_probe.rc != 0", "skip_reason": "Conditional result was False"}
+
+TASK [Pull the MariaDB and Nginx images] ***************************************
+changed: [ubuntu_public] => {"changed": true, "changed_when_result": true, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "pull", "db", "proxy"], "delta": "0:00:08.724888", "end": "2026-08-28 17:33:01.058155", "msg": "", "rc": 0, "start": "2026-08-28 17:32:52.333267", "stderr": " Image mariadb:10.11.18-jammy Pulling \n Image nginx:1.30.4-alpine Pulling \n Image nginx:1.30.4-alpine Pulled \n Image mariadb:10.11.18-jammy Pulled ", "stderr_lines": [" Image mariadb:10.11.18-jammy Pulling ", " Image nginx:1.30.4-alpine Pulling ", " Image nginx:1.30.4-alpine Pulled ", " Image mariadb:10.11.18-jammy Pulled "], "stdout": "", "stdout_lines": []}
+
+TASK [Build the SEO Auditor backend image] *************************************
+changed: [ubuntu_public] => {"changed": true, "changed_when_result": true, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "build", "--pull", "backend"], "delta": "0:00:07.195558", "end": "2026-08-28 17:33:09.135148", "msg": "", "rc": 0, "start": "2026-08-28 17:33:01.939590", "stderr": " Image seo-auditor-backend:1.1 Building \n Image seo-auditor-backend:1.1 Built ", "stderr_lines": [" Image seo-auditor-backend:1.1 Building ", " Image seo-auditor-backend:1.1 Built "], "stdout": "#1 [internal] load local bake definitions\n#1 reading from stdin 554B done\n#1 DONE 0.0s\n\n#2 [internal] load build definition from Dockerfile\n#2 transferring dockerfile: 944B done\n#2 DONE 0.0s\n\n#3 resolve image config for docker-image://docker.io/docker/dockerfile:1\n#3 DONE 3.4s\n\n#4 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32\n#4 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.0s done\n#4 CACHED\n\n#5 [internal] load metadata for docker.io/library/python:3.12.14-slim-bookworm\n#5 DONE 2.3s\n\n#6 [internal] load .dockerignore\n#6 transferring context: 248B done\n#6 DONE 0.0s\n\n#7 [internal] load build context\n#7 transferring context: 212B done\n#7 DONE 0.0s\n\n#8 [builder 1/4] FROM docker.io/library/python:3.12.14-slim-bookworm@sha256:0f5b26b9518d002b6173fd61daad821fa340635ebfec5bba471013f9ca114579\n#8 resolve docker.io/library/python:3.12.14-slim-bookworm@sha256:0f5b26b9518d002b6173fd61daad821fa340635ebfec5bba471013f9ca114579 0.0s done\n#8 DONE 0.0s\n\n#9 [builder 2/4] WORKDIR /build\n#9 CACHED\n\n#10 [runtime 4/5] COPY --from=builder /install /usr/local\n#10 CACHED\n\n#11 [builder 3/4] COPY app/requirements.txt ./requirements.txt\n#11 CACHED\n\n#12 [builder 4/4] RUN python -m pip install     --prefix=/install     --requirement requirements.txt\n#12 CACHED\n\n#13 [runtime 2/5] RUN groupadd --gid 10001 appgroup     && useradd        --uid 10001        --gid appgroup        --home-dir /app        --no-create-home        --no-log-init        --shell /usr/sbin/nologin        appuser\n#13 CACHED\n\n#14 [runtime 3/5] WORKDIR /app\n#14 CACHED\n\n#15 [runtime 5/5] COPY --chown=appuser:appgroup app/ ./\n#15 CACHED\n\n#16 exporting to image\n#16 exporting layers done\n#16 exporting manifest sha256:3bf39460a5038f85a99270bd9580210521cca9f4099fd4259f089e9949d54699 done\n#16 exporting config sha256:7d55b1acbad6b0397b241957c61e17891f5ac8597d563baa2ec9d6f42507bed5 done\n#16 exporting attestation manifest sha256:a400a1f19484f90c694209b3228da8562e42e407c5c3ef5ebbd9d583a890ef48 0.0s done\n#16 exporting manifest list sha256:60983d38ebd6e23a5b169a6fb0e36c8e09ee9f4ca6a3bd33d08b33d6f9cec34c 0.0s done\n#16 naming to docker.io/library/seo-auditor-backend:1.1 done\n#16 unpacking to docker.io/library/seo-auditor-backend:1.1 0.0s done\n#16 DONE 0.1s\n\n#17 resolving provenance for metadata file\n#17 DONE 0.0s", "stdout_lines": ["#1 [internal] load local bake definitions", "#1 reading from stdin 554B done", "#1 DONE 0.0s", "", "#2 [internal] load build definition from Dockerfile", "#2 transferring dockerfile: 944B done", "#2 DONE 0.0s", "", "#3 resolve image config for docker-image://docker.io/docker/dockerfile:1", "#3 DONE 3.4s", "", "#4 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32", "#4 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.0s done", "#4 CACHED", "", "#5 [internal] load metadata for docker.io/library/python:3.12.14-slim-bookworm", "#5 DONE 2.3s", "", "#6 [internal] load .dockerignore", "#6 transferring context: 248B done", "#6 DONE 0.0s", "", "#7 [internal] load build context", "#7 transferring context: 212B done", "#7 DONE 0.0s", "", "#8 [builder 1/4] FROM docker.io/library/python:3.12.14-slim-bookworm@sha256:0f5b26b9518d002b6173fd61daad821fa340635ebfec5bba471013f9ca114579", "#8 resolve docker.io/library/python:3.12.14-slim-bookworm@sha256:0f5b26b9518d002b6173fd61daad821fa340635ebfec5bba471013f9ca114579 0.0s done", "#8 DONE 0.0s", "", "#9 [builder 2/4] WORKDIR /build", "#9 CACHED", "", "#10 [runtime 4/5] COPY --from=builder /install /usr/local", "#10 CACHED", "", "#11 [builder 3/4] COPY app/requirements.txt ./requirements.txt", "#11 CACHED", "", "#12 [builder 4/4] RUN python -m pip install     --prefix=/install     --requirement requirements.txt", "#12 CACHED", "", "#13 [runtime 2/5] RUN groupadd --gid 10001 appgroup     && useradd        --uid 10001        --gid appgroup        --home-dir /app        --no-create-home        --no-log-init        --shell /usr/sbin/nologin        appuser", "#13 CACHED", "", "#14 [runtime 3/5] WORKDIR /app", "#14 CACHED", "", "#15 [runtime 5/5] COPY --chown=appuser:appgroup app/ ./", "#15 CACHED", "", "#16 exporting to image", "#16 exporting layers done", "#16 exporting manifest sha256:3bf39460a5038f85a99270bd9580210521cca9f4099fd4259f089e9949d54699 done", "#16 exporting config sha256:7d55b1acbad6b0397b241957c61e17891f5ac8597d563baa2ec9d6f42507bed5 done", "#16 exporting attestation manifest sha256:a400a1f19484f90c694209b3228da8562e42e407c5c3ef5ebbd9d583a890ef48 0.0s done", "#16 exporting manifest list sha256:60983d38ebd6e23a5b169a6fb0e36c8e09ee9f4ca6a3bd33d08b33d6f9cec34c 0.0s done", "#16 naming to docker.io/library/seo-auditor-backend:1.1 done", "#16 unpacking to docker.io/library/seo-auditor-backend:1.1 0.0s done", "#16 DONE 0.1s", "", "#17 resolving provenance for metadata file", "#17 DONE 0.0s"]}
+
+TASK [Start the complete stack and wait for health checks] *********************
+changed: [ubuntu_public] => {"changed": true, "changed_when_result": true, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "up", "--detach", "--wait", "--wait-timeout", "300", "--remove-orphans"], "delta": "0:00:15.986116", "end": "2026-08-28 17:33:25.962018", "msg": "", "rc": 0, "start": "2026-08-28 17:33:09.975902", "stderr": " Container seo-auditor-public-db-1 Running \n Container seo-auditor-public-backend-1 Recreate \n Container seo-auditor-public-backend-1 Recreated \n Container seo-auditor-public-proxy-1 Recreate \n Container seo-auditor-public-proxy-1 Recreated \n Container seo-auditor-public-db-1 Waiting \n Container seo-auditor-public-db-1 Healthy \n Container seo-auditor-public-backend-1 Starting \n Container seo-auditor-public-backend-1 Started \n Container seo-auditor-public-backend-1 Waiting \n Container seo-auditor-public-backend-1 Healthy \n Container seo-auditor-public-proxy-1 Starting \n Container seo-auditor-public-proxy-1 Started \n Container seo-auditor-public-backend-1 Waiting \n Container seo-auditor-public-proxy-1 Waiting \n Container seo-auditor-public-db-1 Waiting \n Container seo-auditor-public-backend-1 Healthy \n Container seo-auditor-public-db-1 Healthy \n Container seo-auditor-public-proxy-1 Healthy ", "stderr_lines": [" Container seo-auditor-public-db-1 Running ", " Container seo-auditor-public-backend-1 Recreate ", " Container seo-auditor-public-backend-1 Recreated ", " Container seo-auditor-public-proxy-1 Recreate ", " Container seo-auditor-public-proxy-1 Recreated ", " Container seo-auditor-public-db-1 Waiting ", " Container seo-auditor-public-db-1 Healthy ", " Container seo-auditor-public-backend-1 Starting ", " Container seo-auditor-public-backend-1 Started ", " Container seo-auditor-public-backend-1 Waiting ", " Container seo-auditor-public-backend-1 Healthy ", " Container seo-auditor-public-proxy-1 Starting ", " Container seo-auditor-public-proxy-1 Started ", " Container seo-auditor-public-backend-1 Waiting ", " Container seo-auditor-public-proxy-1 Waiting ", " Container seo-auditor-public-db-1 Waiting ", " Container seo-auditor-public-backend-1 Healthy ", " Container seo-auditor-public-db-1 Healthy ", " Container seo-auditor-public-proxy-1 Healthy "], "stdout": "", "stdout_lines": []}
+
+TASK [Verify Nginx health from the origin] *************************************
+ok: [ubuntu_public] => {"cache_control": "no-store, no-cache, must-revalidate, private", "changed": false, "connection": "close", "content": "healthy\n", "content_length": "8", "content_type": "text/plain", "cookies": {}, "cookies_string": "", "date": "Fri, 28 Aug 2026 17:33:27 GMT", "elapsed": 0, "expires": "0", "msg": "OK (8 bytes)", "pragma": "no-cache", "redirected": false, "referrer_policy": "no-referrer", "server": "nginx", "status": 200, "url": "http://127.0.0.1/nginx-health", "x_content_type_options": "nosniff", "x_frame_options": "DENY"}
+
+TASK [Verify backend health through Nginx] *************************************
+ok: [ubuntu_public] => {"cache_control": "no-store, no-cache, must-revalidate, private", "changed": false, "connection": "close", "content": "{\"status\":\"ok\"}\n", "content_length": "16", "content_type": "application/json", "cookies": {}, "cookies_string": "", "date": "Fri, 28 Aug 2026 17:33:28 GMT", "elapsed": 0, "expires": "0", "json": {"status": "ok"}, "msg": "OK (16 bytes)", "pragma": "no-cache", "redirected": false, "referrer_policy": "no-referrer", "server": "nginx", "status": 200, "url": "http://127.0.0.1/health", "x_content_type_options": "nosniff", "x_frame_options": "DENY"}
+
+TASK [Verify the SEO Auditor interface with Basic Auth] ************************
+ok: [ubuntu_public] => {"censored": "the output has been hidden due to the fact that 'no_log: true' was specified for this result", "changed": false}
+
+TASK [Verify the SEO Auditor interface without Basic Auth] *********************
+skipping: [ubuntu_public] => {"changed": false, "false_condition": "not enable_basic_auth | bool", "skip_reason": "Conditional result was False"}
+
+TASK [Confirm that the SEO Auditor UI is active] *******************************
+[ERROR]: Task failed: Error while evaluating conditional: object of type 'dict' has no attribute 'content'
+
+Task failed.
+Origin: /home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/deploy_public.yml:452:7
+
+450       when: not enable_basic_auth | bool
+451
+452     - name: Confirm that the SEO Auditor UI is active
+          ^ column 7
+
+<<< caused by >>>
+
+Error while evaluating conditional: object of type 'dict' has no attribute 'content'
+Origin: /home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/deploy_public.yml:455:13
+
+453       ansible.builtin.assert:
+454         that:
+455           - "'SEO Auditor' in seo_interface_test.content"
+                ^ column 13
+
+fatal: [ubuntu_public]: FAILED! => {"changed": false, "msg": "Task failed: Error while evaluating conditional: object of type 'dict' has no attribute 'content'"}
+
+PLAY RECAP *********************************************************************
+ubuntu_public              : ok=55   changed=13   unreachable=0    failed=1    skipped=7    rescued=0    ignored=0   
+

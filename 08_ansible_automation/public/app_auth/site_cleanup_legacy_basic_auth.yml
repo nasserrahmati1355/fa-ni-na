@@ -1,0 +1,2 @@
+---
+- ansible.builtin.import_playbook: cleanup_legacy_basic_auth.yml

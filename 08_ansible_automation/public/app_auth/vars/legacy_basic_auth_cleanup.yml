@@ -1,0 +1,15 @@
+---
+# Retired Nginx Basic Authentication artifacts
+legacy_basic_auth_remote_htpasswd: >-
+  {{ deployment_dir }}/nginx/htpasswd
+
+# The site playbook is stored in public/app_auth, so playbook_dir points there.
+legacy_basic_auth_local_secret_dir: >-
+  {{ playbook_dir }}/../.secrets
+legacy_basic_auth_local_password_file: >-
+  {{ legacy_basic_auth_local_secret_dir }}/basic_auth_password
+legacy_basic_auth_local_credentials_file: >-
+  {{ playbook_dir }}/../generated_basic_auth_credentials.txt
+
+legacy_basic_auth_cleanup_report: >-
+  {{ playbook_dir }}/legacy_basic_auth_cleanup_report.txt

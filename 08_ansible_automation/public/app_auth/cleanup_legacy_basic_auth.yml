@@ -1,0 +1,561 @@
+---
+- name: Remove retired Nginx Basic Auth credentials
+  hosts: public_servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../vars/public.yml
+    - ../origin_tls/vars/origin_tls.yml
+    - vars/app_auth.yml
+    - vars/legacy_basic_auth_cleanup.yml
+
+  pre_tasks:
+    - name: Require Nginx Basic Auth to be disabled in source configuration
+      ansible.builtin.assert:
+        that:
+          - not (enable_basic_auth | bool)
+        fail_msg: >-
+          enable_basic_auth is still true. Complete Stage 5 before deleting
+          the rollback credentials.
+        success_msg: "Nginx Basic Auth is disabled in public variables."
+
+    - name: Check the application administrator password on the Controller
+      ansible.builtin.stat:
+        path: "{{ app_admin_password_file }}"
+      register: app_admin_password_stat
+      delegate_to: localhost
+      become: false
+
+    - name: Check the application-authentication verifier on the Controller
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/scripts/verify_application_auth.sh"
+      register: application_auth_verifier_stat
+      delegate_to: localhost
+      become: false
+
+    - name: Stop when an application-authentication prerequisite is missing
+      ansible.builtin.assert:
+        that:
+          - app_admin_password_stat.stat.exists | default(false)
+          - app_admin_password_stat.stat.isreg | default(false)
+          - (app_admin_password_stat.stat.size | default(0) | int) > 0
+          - application_auth_verifier_stat.stat.exists | default(false)
+          - application_auth_verifier_stat.stat.isreg | default(false)
+          - application_auth_verifier_stat.stat.executable | default(false)
+        fail_msg: >-
+          The Flask administrator credential or application-authentication
+          verifier is missing. Do not remove the legacy Basic Auth credentials.
+
+    - name: Check deployed application prerequisites
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: "{{ item.follow | default(false) }}"
+        get_checksum: false
+        get_mime: false
+      loop:
+        - path: "{{ deployment_dir }}/.env"
+        - path: "{{ deployment_dir }}/docker-compose.yml"
+        - path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        - path: "{{ deployment_dir }}/secrets/flask_secret_key.txt"
+        - path: "{{ letsencrypt_fullchain_path }}"
+          follow: true
+        - path: "{{ letsencrypt_private_key_path }}"
+          follow: true
+      register: deployed_prerequisites
+
+    - name: Stop when a deployed prerequisite is missing
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists | default(false)
+          - item.stat.isreg | default(false)
+          - (item.stat.size | default(0) | int) > 0
+        fail_msg: >-
+          Required deployed file is missing, broken, or empty:
+          {{ item.item.path }}
+      loop: "{{ deployed_prerequisites.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+
+    - name: Validate the active Docker Compose configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+          - --quiet
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Read the rendered Docker Compose configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+        chdir: "{{ deployment_dir }}"
+      register: rendered_compose_configuration
+      changed_when: false
+
+    - name: Confirm the retired htpasswd file is not mounted
+      ansible.builtin.assert:
+        that:
+          - "'/etc/nginx/auth/htpasswd' not in rendered_compose_configuration.stdout"
+          - "'nginx/htpasswd' not in rendered_compose_configuration.stdout"
+        fail_msg: >-
+          Docker Compose still mounts the htpasswd file. Complete Stage 5
+          before deleting the file.
+
+    - name: Test the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      register: nginx_config_test
+      changed_when: false
+
+    - name: Dump the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -T
+        chdir: "{{ deployment_dir }}"
+      register: active_nginx_configuration
+      changed_when: false
+
+    - name: Confirm active Nginx has no Basic Auth directives
+      ansible.builtin.assert:
+        that:
+          - >-
+            'auth_basic'
+            not in (
+              (active_nginx_configuration.stdout | default(''))
+              ~ (active_nginx_configuration.stderr | default(''))
+            )
+          - >-
+            'auth_basic_user_file'
+            not in (
+              (active_nginx_configuration.stdout | default(''))
+              ~ (active_nginx_configuration.stderr | default(''))
+            )
+        fail_msg: >-
+          The active Nginx configuration still contains Basic Authentication.
+          Legacy credentials will not be deleted.
+
+    - name: Get the active Nginx container ID
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - ps
+          - -q
+          - proxy
+        chdir: "{{ deployment_dir }}"
+      register: proxy_container_id
+      changed_when: false
+
+    - name: Stop when the Nginx container ID is empty
+      ansible.builtin.assert:
+        that:
+          - proxy_container_id.stdout | trim | length > 0
+        fail_msg: "The active Nginx container could not be identified."
+
+    - name: Inspect the active Nginx container
+      ansible.builtin.command:
+        argv:
+          - docker
+          - inspect
+          - "{{ proxy_container_id.stdout | trim }}"
+      register: proxy_container_inspect
+      changed_when: false
+
+    - name: Confirm the active Nginx container does not mount htpasswd
+      ansible.builtin.assert:
+        that:
+          - "'/etc/nginx/auth/htpasswd' not in proxy_container_inspect.stdout"
+        fail_msg: >-
+          The active Nginx container still mounts htpasswd. Legacy credentials
+          will not be deleted.
+
+    - name: Verify the Origin TLS marker through ArvanCloud
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}{{ origin_tls_health_path }}?stage6={{
+            lookup('ansible.builtin.pipe', 'date +%s%N')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 45
+      register: pre_cleanup_origin_tls
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm ArvanCloud still reaches the HTTPS Origin
+      ansible.builtin.assert:
+        that:
+          - pre_cleanup_origin_tls.content | trim == "origin-tls-ok"
+        fail_msg: "The HTTPS-Origin marker was not returned through ArvanCloud."
+
+    - name: Verify Flask authentication before deleting rollback credentials
+      ansible.builtin.command:
+        argv:
+          - /bin/bash
+          - "{{ playbook_dir }}/scripts/verify_application_auth.sh"
+          - "{{ application_domain }}"
+          - "{{ app_admin_username }}"
+          - "{{ app_admin_password_file }}"
+      register: pre_cleanup_application_auth
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Display pre-cleanup authentication diagnostics
+      ansible.builtin.debug:
+        var: pre_cleanup_application_auth.stdout_lines
+
+  tasks:
+    - name: Check legacy Basic Auth artifacts before cleanup
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      loop:
+        - name: origin_htpasswd
+          path: "{{ legacy_basic_auth_remote_htpasswd }}"
+      register: legacy_remote_artifacts
+
+    - name: Check local legacy Basic Auth artifacts before cleanup
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      loop:
+        - name: controller_basic_auth_password
+          path: "{{ legacy_basic_auth_local_password_file }}"
+        - name: controller_basic_auth_credentials
+          path: "{{ legacy_basic_auth_local_credentials_file }}"
+      register: legacy_local_artifacts
+      delegate_to: localhost
+      become: false
+
+    - name: Remove the retired htpasswd file from the Origin
+      ansible.builtin.file:
+        path: "{{ legacy_basic_auth_remote_htpasswd }}"
+        state: absent
+
+    - name: Remove the retired Basic Auth password from the Controller
+      ansible.builtin.file:
+        path: "{{ legacy_basic_auth_local_password_file }}"
+        state: absent
+      delegate_to: localhost
+      become: false
+
+    - name: Remove the retired Basic Auth credentials summary
+      ansible.builtin.file:
+        path: "{{ legacy_basic_auth_local_credentials_file }}"
+        state: absent
+      delegate_to: localhost
+      become: false
+
+    - name: Check the legacy local secret directory
+      ansible.builtin.stat:
+        path: "{{ legacy_basic_auth_local_secret_dir }}"
+      register: legacy_local_secret_dir_stat
+      delegate_to: localhost
+      become: false
+
+    - name: Inspect remaining files in the legacy local secret directory
+      ansible.builtin.find:
+        paths:
+          - "{{ legacy_basic_auth_local_secret_dir }}"
+        recurse: false
+        hidden: true
+        file_type: any
+      register: remaining_legacy_secret_entries
+      when: legacy_local_secret_dir_stat.stat.isdir | default(false)
+      delegate_to: localhost
+      become: false
+
+    - name: Remove the legacy local secret directory when empty
+      ansible.builtin.file:
+        path: "{{ legacy_basic_auth_local_secret_dir }}"
+        state: absent
+      when:
+        - legacy_local_secret_dir_stat.stat.isdir | default(false)
+        - (remaining_legacy_secret_entries.matched | default(0) | int) == 0
+      delegate_to: localhost
+      become: false
+
+    - name: Verify the Origin htpasswd file is absent
+      ansible.builtin.stat:
+        path: "{{ legacy_basic_auth_remote_htpasswd }}"
+      register: legacy_remote_htpasswd_after
+
+    - name: Verify local legacy Basic Auth artifacts are absent
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ legacy_basic_auth_local_password_file }}"
+        - "{{ legacy_basic_auth_local_credentials_file }}"
+      register: legacy_local_artifacts_after
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm retired Basic Auth files were deleted
+      ansible.builtin.assert:
+        that:
+          - not (legacy_remote_htpasswd_after.stat.exists | default(false))
+          - >-
+            (
+              legacy_local_artifacts_after.results
+              | selectattr('stat.exists', 'defined')
+              | selectattr('stat.exists')
+              | list
+              | length
+            ) == 0
+        fail_msg: "One or more retired Basic Auth artifacts still exist."
+
+    - name: Verify the public Login page has no Basic Auth challenge
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}/login?stage6={{
+            lookup('ansible.builtin.pipe', 'date +%s%N')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: none
+        status_code: 200
+        return_content: true
+        timeout: 45
+      register: public_login_page
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm Login is now exclusively application-managed
+      ansible.builtin.assert:
+        that:
+          - (public_login_page.www_authenticate | default('')) | length == 0
+          - "'ورود به SEO Auditor' in public_login_page.content"
+        fail_msg: >-
+          The Flask Login page was not returned without a Basic Authentication
+          challenge.
+
+    - name: Verify unauthenticated dashboard access redirects to Flask Login
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}/?stage6={{
+            lookup('ansible.builtin.pipe', 'date +%s%N')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: none
+        status_code:
+          - 302
+          - 303
+        return_content: false
+        timeout: 45
+      register: unauthenticated_dashboard
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm unauthenticated access redirects to Login
+      ansible.builtin.assert:
+        that:
+          - "'/login' in (unauthenticated_dashboard.location | default(''))"
+        fail_msg: >-
+          Unauthenticated dashboard access did not redirect to the Flask Login
+          page.
+
+    - name: Verify Flask Login after cleanup
+      ansible.builtin.command:
+        argv:
+          - /bin/bash
+          - "{{ playbook_dir }}/scripts/verify_application_auth.sh"
+          - "{{ application_domain }}"
+          - "{{ app_admin_username }}"
+          - "{{ app_admin_password_file }}"
+      register: post_cleanup_application_auth
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Verify the Origin TLS marker after cleanup
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}{{ origin_tls_health_path }}?stage6_post={{
+            lookup('ansible.builtin.pipe', 'date +%s%N')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 45
+      register: post_cleanup_origin_tls
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm Origin TLS remains healthy after cleanup
+      ansible.builtin.assert:
+        that:
+          - post_cleanup_origin_tls.content | trim == "origin-tls-ok"
+        fail_msg: "Origin TLS verification failed after credential cleanup."
+
+    - name: Read the final Docker Compose service status
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - ps
+          - --all
+        chdir: "{{ deployment_dir }}"
+      register: final_compose_status
+      changed_when: false
+
+    - name: Write the legacy Basic Auth cleanup report
+      ansible.builtin.copy:
+        dest: "{{ legacy_basic_auth_cleanup_report }}"
+        mode: "0644"
+        content: |
+          ========================================
+          Stage 6 - Legacy Basic Auth Cleanup
+          ========================================
+
+          Generated at:
+          {{ lookup('ansible.builtin.pipe', 'date --iso-8601=seconds') }}
+
+          Domain:
+          {{ application_domain }}
+
+          ----------------------------------------
+          Preconditions
+          ----------------------------------------
+
+          Nginx auth_basic directives: ABSENT
+          Nginx htpasswd mount: ABSENT
+          Flask application authentication before cleanup: PASSED
+          ArvanCloud to Origin HTTPS before cleanup: PASSED
+
+          ----------------------------------------
+          Deleted Artifacts
+          ----------------------------------------
+
+          Origin htpasswd path:
+          {{ legacy_basic_auth_remote_htpasswd }}
+
+          Existed before cleanup:
+          {{
+            legacy_remote_artifacts.results[0].stat.exists
+            | default(false)
+          }}
+
+          Controller Basic Auth password path:
+          {{ legacy_basic_auth_local_password_file }}
+
+          Existed before cleanup:
+          {{
+            legacy_local_artifacts.results[0].stat.exists
+            | default(false)
+          }}
+
+          Controller credentials summary path:
+          {{ legacy_basic_auth_local_credentials_file }}
+
+          Existed before cleanup:
+          {{
+            legacy_local_artifacts.results[1].stat.exists
+            | default(false)
+          }}
+
+          Password values and password hashes were not written to this report.
+
+          ----------------------------------------
+          Post-cleanup Verification
+          ----------------------------------------
+
+          Origin htpasswd file: ABSENT
+          Controller Basic Auth password: ABSENT
+          Controller Basic Auth credentials summary: ABSENT
+          Public Login page without WWW-Authenticate: PASSED
+          Unauthenticated dashboard redirect to Flask Login: PASSED
+          Flask Login, Session, CSRF and Logout: PASSED
+          ArvanCloud to Origin HTTPS: PASSED
+
+          ----------------------------------------
+          Docker Compose Status
+          ----------------------------------------
+
+          {{ final_compose_status.stdout }}
+
+          ----------------------------------------
+          Application Authentication Test
+          ----------------------------------------
+
+          {{ post_cleanup_application_auth.stdout }}
+
+          ----------------------------------------
+          Final Result
+          ----------------------------------------
+
+          Overall legacy Basic Auth cleanup: PASSED
+      delegate_to: localhost
+      become: false
+
+    - name: Display the Stage 6 cleanup result
+      ansible.builtin.debug:
+        msg:
+          - "Retired Nginx Basic Auth credentials were removed."
+          - "Flask Login remains the only interactive authentication layer."
+          - "No Docker volume, database record, TLS key, or Flask secret was removed."
+          - "Report: {{ legacy_basic_auth_cleanup_report }}"
+          - "Overall legacy Basic Auth cleanup: PASSED"

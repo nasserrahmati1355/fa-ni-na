@@ -1,0 +1,626 @@
+---
+- name: Check the application administrator password on the Controller
+  ansible.builtin.stat:
+    path: "{{ app_admin_password_file }}"
+    get_checksum: false
+    get_mime: false
+  register: final_app_admin_password_stat
+  delegate_to: localhost
+  become: false
+
+- name: Check the canonical application-login verifier
+  ansible.builtin.stat:
+    path: "{{ app_auth_automation_dir }}/scripts/verify_application_auth.sh"
+    get_checksum: false
+    get_mime: false
+  register: final_application_verifier_stat
+  delegate_to: localhost
+  become: false
+
+- name: Stop when an application-verification prerequisite is missing
+  ansible.builtin.assert:
+    that:
+      - final_app_admin_password_stat.stat.exists | default(false)
+      - final_app_admin_password_stat.stat.isreg | default(false)
+      - (final_app_admin_password_stat.stat.size | default(0) | int) > 0
+      - final_application_verifier_stat.stat.exists | default(false)
+      - final_application_verifier_stat.stat.isreg | default(false)
+      - final_application_verifier_stat.stat.executable | default(false)
+    fail_msg: >-
+      The application administrator password or canonical verifier is missing.
+      Expected password: {{ app_admin_password_file }}
+      Expected verifier:
+      {{ app_auth_automation_dir }}/scripts/verify_application_auth.sh
+
+- name: Validate the active Docker Compose configuration
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - config
+      - --quiet
+    chdir: "{{ deployment_dir }}"
+  changed_when: false
+
+- name: Read the rendered Docker Compose configuration
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - config
+    chdir: "{{ deployment_dir }}"
+  register: final_rendered_compose
+  changed_when: false
+
+- name: Confirm Compose no longer contains Nginx Basic Auth
+  ansible.builtin.assert:
+    that:
+      - "'/etc/nginx/auth/htpasswd' not in final_rendered_compose.stdout"
+      - "'nginx/htpasswd' not in final_rendered_compose.stdout"
+    fail_msg: >-
+      The active Compose configuration still mounts an htpasswd file.
+
+- name: Read the Docker Compose service status
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - ps
+      - --all
+    chdir: "{{ deployment_dir }}"
+  register: final_compose_status
+  changed_when: false
+
+- name: Get service container IDs
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - ps
+      - -q
+      - "{{ item }}"
+    chdir: "{{ deployment_dir }}"
+  loop:
+    - db
+    - backend
+    - proxy
+  register: final_service_ids
+  changed_when: false
+
+- name: Stop when a required service container is missing
+  ansible.builtin.assert:
+    that:
+      - item.stdout | trim | length > 0
+    fail_msg: "Container ID is missing for service: {{ item.item }}"
+  loop: "{{ final_service_ids.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Inspect required service containers
+  ansible.builtin.command:
+    argv:
+      - docker
+      - inspect
+      - "{{ item.stdout | trim }}"
+  loop: "{{ final_service_ids.results }}"
+  register: final_service_inspections
+  changed_when: false
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Confirm all required services are running and healthy
+  ansible.builtin.assert:
+    that:
+      - (item.stdout | from_json)[0]['State']['Running'] | bool
+      - >-
+        (item.stdout | from_json)[0]['State']['Health']['Status']
+        == 'healthy'
+    fail_msg: >-
+      Service {{ item.item.item }} is not running and healthy.
+  loop: "{{ final_service_inspections.results }}"
+  loop_control:
+    label: "{{ item.item.item }}"
+
+- name: Test the active Nginx configuration
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - exec
+      - -T
+      - proxy
+      - nginx
+      - -t
+    chdir: "{{ deployment_dir }}"
+  register: final_nginx_test
+  changed_when: false
+
+- name: Dump the active Nginx configuration
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - exec
+      - -T
+      - proxy
+      - nginx
+      - -T
+    chdir: "{{ deployment_dir }}"
+  register: final_nginx_dump
+  changed_when: false
+
+- name: Confirm Nginx delegates authentication to Flask
+  ansible.builtin.assert:
+    that:
+      - >-
+        'auth_basic'
+        not in (
+          (final_nginx_dump.stdout | default(''))
+          ~ (final_nginx_dump.stderr | default(''))
+        )
+      - >-
+        'auth_basic_user_file'
+        not in (
+          (final_nginx_dump.stdout | default(''))
+          ~ (final_nginx_dump.stderr | default(''))
+        )
+      - >-
+        '/etc/nginx/auth/htpasswd'
+        not in (
+          (final_nginx_dump.stdout | default(''))
+          ~ (final_nginx_dump.stderr | default(''))
+        )
+    fail_msg: >-
+      Nginx still contains a Basic Authentication directive or htpasswd path.
+
+- name: Confirm rate limiting excludes application Login and Logout
+  ansible.builtin.assert:
+    that:
+      - >-
+        'map "$request_method:$uri" $seo_audit_rate_key'
+        in final_nginx_dump.stdout
+      - >-
+        '"POST:/audit" $binary_remote_addr;'
+        in final_nginx_dump.stdout
+      - >-
+        'map $request_method $seo_audit_rate_key'
+        not in final_nginx_dump.stdout
+    fail_msg: >-
+      The active Nginx rate limit is not scoped exclusively to POST /audit.
+
+- name: Confirm the active Nginx container does not mount htpasswd
+  ansible.builtin.assert:
+    that:
+      - >-
+        '/etc/nginx/auth/htpasswd'
+        not in (
+          final_service_inspections.results
+          | selectattr('item.item', 'equalto', 'proxy')
+          | map(attribute='stdout')
+          | first
+        )
+    fail_msg: "The active Nginx container still mounts htpasswd."
+
+- name: Resolve the public domain from the Controller
+  ansible.builtin.command:
+    argv:
+      - getent
+      - ahostsv4
+      - "{{ application_domain }}"
+  register: final_public_dns
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Verify the Origin-only TLS marker through ArvanCloud
+  ansible.builtin.uri:
+    url: >-
+      https://{{ application_domain }}{{ origin_tls_health_path }}?stage7={{
+        lookup('ansible.builtin.pipe', 'date +%s%N')
+      }}
+    method: GET
+    headers:
+      Cache-Control: no-cache
+      Pragma: no-cache
+    validate_certs: true
+    use_proxy: false
+    follow_redirects: safe
+    status_code: 200
+    return_content: true
+    timeout: 45
+  register: final_public_origin_tls
+  delegate_to: localhost
+  become: false
+
+- name: Confirm ArvanCloud reaches the HTTPS Origin
+  ansible.builtin.assert:
+    that:
+      - final_public_origin_tls.content | trim == 'origin-tls-ok'
+    fail_msg: >-
+      The HTTPS-Origin marker was not returned through ArvanCloud.
+
+- name: Verify the Origin TLS marker directly
+  ansible.builtin.command:
+    argv:
+      - curl
+      - --silent
+      - --show-error
+      - --fail-with-body
+      - --noproxy
+      - '*'
+      - --resolve
+      - "{{ application_domain }}:{{ origin_https_port }}:{{ origin_ip }}"
+      - >-
+        https://{{ application_domain }}{{ origin_tls_health_path }}?stage7_direct={{
+          lookup('ansible.builtin.pipe', 'date +%s%N')
+        }}
+  register: final_direct_origin_tls
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Confirm direct Origin TLS is active
+  ansible.builtin.assert:
+    that:
+      - final_direct_origin_tls.stdout | trim == 'origin-tls-ok'
+    fail_msg: "The direct HTTPS Origin marker was not returned."
+
+- name: Verify the public health endpoint
+  ansible.builtin.uri:
+    url: >-
+      https://{{ application_domain }}/health?stage7={{
+        lookup('ansible.builtin.pipe', 'date +%s%N')
+      }}
+    method: GET
+    headers:
+      Cache-Control: no-cache
+      Pragma: no-cache
+    validate_certs: true
+    use_proxy: false
+    follow_redirects: safe
+    status_code: 200
+    return_content: true
+    timeout: 45
+  register: final_public_health
+  delegate_to: localhost
+  become: false
+
+- name: Confirm the public Backend health response
+  ansible.builtin.assert:
+    that:
+      - final_public_health.json.status | default('') == 'ok'
+    fail_msg: "The public Backend health response is not healthy."
+
+- name: Verify Backend health directly through Origin HTTPS
+  ansible.builtin.command:
+    argv:
+      - curl
+      - --silent
+      - --show-error
+      - --fail-with-body
+      - --noproxy
+      - '*'
+      - --resolve
+      - "{{ application_domain }}:{{ origin_https_port }}:{{ origin_ip }}"
+      - >-
+        https://{{ application_domain }}/health?stage7_direct={{
+          lookup('ansible.builtin.pipe', 'date +%s%N')
+        }}
+  register: final_direct_health
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Confirm the direct Backend health response
+  ansible.builtin.assert:
+    that:
+      - (final_direct_health.stdout | from_json).status == 'ok'
+    fail_msg: "The direct Origin Backend health response is not healthy."
+
+- name: Verify Application Login through ArvanCloud
+  ansible.builtin.command:
+    argv:
+      - /bin/bash
+      - "{{ app_auth_automation_dir }}/scripts/verify_application_auth.sh"
+      - "{{ application_domain }}"
+      - "{{ app_admin_username }}"
+      - "{{ app_admin_password_file }}"
+  register: final_public_application_auth
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Verify Application Login directly against the Origin
+  ansible.builtin.command:
+    argv:
+      - /bin/bash
+      - "{{ app_auth_automation_dir }}/scripts/verify_application_auth.sh"
+      - "{{ application_domain }}"
+      - "{{ app_admin_username }}"
+      - "{{ app_admin_password_file }}"
+      - "{{ origin_ip }}"
+  register: final_direct_application_auth
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Display non-sensitive Application Login diagnostics
+  ansible.builtin.debug:
+    msg:
+      - "Public path: {{ final_public_application_auth.stdout_lines }}"
+      - "Direct Origin path: {{ final_direct_application_auth.stdout_lines }}"
+
+- name: Read effective Flask session and CSRF configuration
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - exec
+      - -T
+      - backend
+      - python
+      - -c
+      - >-
+        import json;
+        from hello import server;
+        csrf_limit = server.config.get('WTF_CSRF_TIME_LIMIT');
+        csrf_seconds = int(csrf_limit.total_seconds()) if hasattr(csrf_limit, 'total_seconds') else int(csrf_limit);
+        print(json.dumps({
+          'cookie_name': server.config.get('SESSION_COOKIE_NAME'),
+          'secure': bool(server.config.get('SESSION_COOKIE_SECURE')),
+          'httponly': bool(server.config.get('SESSION_COOKIE_HTTPONLY')),
+          'samesite': server.config.get('SESSION_COOKIE_SAMESITE'),
+          'refresh_each_request': bool(server.config.get('SESSION_REFRESH_EACH_REQUEST')),
+          'session_lifetime_seconds': int(server.permanent_session_lifetime.total_seconds()),
+          'csrf_enabled': bool(server.config.get('WTF_CSRF_ENABLED')),
+          'csrf_time_limit_seconds': csrf_seconds,
+          'trusted_hosts': server.config.get('TRUSTED_HOSTS') or []
+        }))
+    chdir: "{{ deployment_dir }}"
+  register: final_flask_security_config_raw
+  changed_when: false
+
+- name: Parse effective Flask security configuration
+  ansible.builtin.set_fact:
+    final_flask_security_config: >-
+      {{ final_flask_security_config_raw.stdout | from_json }}
+
+- name: Confirm effective Session and CSRF settings
+  ansible.builtin.assert:
+    that:
+      - final_flask_security_config.cookie_name == 'nhref_session'
+      - final_flask_security_config.secure | bool
+      - final_flask_security_config.httponly | bool
+      - final_flask_security_config.samesite == 'Lax'
+      - final_flask_security_config.refresh_each_request | bool
+      - >-
+        final_flask_security_config.session_lifetime_seconds | int
+        == (session_lifetime_minutes | int * 60)
+      - final_flask_security_config.csrf_enabled | bool
+      - >-
+        final_flask_security_config.csrf_time_limit_seconds | int
+        == csrf_time_limit_seconds | int
+      - application_domain in final_flask_security_config.trusted_hosts
+    fail_msg: >-
+      The effective Flask Session, CSRF, or trusted-host configuration differs
+      from the expected application-authentication policy.
+
+- name: Read the Origin certificate
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      set -o pipefail
+      printf '' |
+      timeout 20 openssl s_client \
+        -connect {{ origin_ip }}:{{ origin_https_port }} \
+        -servername {{ application_domain }} \
+        -verify_hostname {{ application_domain }} \
+        -verify_return_error \
+        2>/dev/null |
+      openssl x509 \
+        -noout \
+        -subject \
+        -issuer \
+        -serial \
+        -dates \
+        -fingerprint \
+        -sha256 \
+        -ext subjectAltName
+  register: final_origin_certificate
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Read the ArvanCloud Edge certificate
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      set -o pipefail
+      printf '' |
+      timeout 20 openssl s_client \
+        -connect {{ application_domain }}:443 \
+        -servername {{ application_domain }} \
+        2>/dev/null |
+      openssl x509 \
+        -noout \
+        -subject \
+        -issuer \
+        -serial \
+        -dates \
+        -fingerprint \
+        -sha256
+  register: final_edge_certificate
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+- name: Collect recent Backend authentication logs
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - .env
+      - -f
+      - docker-compose.yml
+      - logs
+      - --no-color
+      - --timestamps
+      - --tail
+      - '100'
+      - backend
+    chdir: "{{ deployment_dir }}"
+  register: final_backend_logs
+  changed_when: false
+
+- name: Write the final verification report on the Controller
+  ansible.builtin.copy:
+    dest: "{{ verification_report_path }}"
+    mode: '0644'
+    content: |
+      ========================================
+      {{ verification_report_title }}
+      ========================================
+
+      Generated at:
+      {{ lookup('ansible.builtin.pipe', 'date --iso-8601=seconds') }}
+
+      Scope:
+      {{ verification_scope }}
+
+      Domain:
+      {{ application_domain }}
+
+      Origin:
+      {{ origin_ip }}:{{ origin_https_port }}
+
+      ----------------------------------------
+      Public DNS
+      ----------------------------------------
+
+      {{ final_public_dns.stdout }}
+
+      ----------------------------------------
+      Docker Compose Status
+      ----------------------------------------
+
+      {{ final_compose_status.stdout }}
+
+      ----------------------------------------
+      Nginx
+      ----------------------------------------
+
+      Configuration test:
+      {{ final_nginx_test.stdout | default('') }}
+      {{ final_nginx_test.stderr | default('') }}
+
+      auth_basic directives: ABSENT
+      htpasswd mount: ABSENT
+      Rate limit: POST /audit only
+
+      ----------------------------------------
+      TLS and Health
+      ----------------------------------------
+
+      ArvanCloud to Origin marker:
+      {{ final_public_origin_tls.content | trim }}
+
+      Direct Origin marker:
+      {{ final_direct_origin_tls.stdout | trim }}
+
+      Public Backend health:
+      {{ final_public_health.content | trim }}
+
+      Direct Origin Backend health:
+      {{ final_direct_health.stdout | trim }}
+
+      ----------------------------------------
+      Application Login through ArvanCloud
+      ----------------------------------------
+
+      {{ final_public_application_auth.stdout }}
+
+      ----------------------------------------
+      Application Login through Direct Origin
+      ----------------------------------------
+
+      {{ final_direct_application_auth.stdout }}
+
+      ----------------------------------------
+      Effective Flask Security Configuration
+      ----------------------------------------
+
+      {{ final_flask_security_config | to_nice_json }}
+
+      ----------------------------------------
+      Origin Certificate
+      ----------------------------------------
+
+      {{ final_origin_certificate.stdout }}
+
+      ----------------------------------------
+      ArvanCloud Edge Certificate
+      ----------------------------------------
+
+      {{ final_edge_certificate.stdout }}
+
+      ----------------------------------------
+      Recent Backend Logs
+      ----------------------------------------
+
+      {{ final_backend_logs.stdout }}
+
+      ----------------------------------------
+      Final Result
+      ----------------------------------------
+
+      Nginx Basic Authentication: ABSENT
+      Flask Application Login: PASSED
+      Login and Logout: PASSED
+      Session Cookie Security: PASSED
+      Session Lifetime Configuration: PASSED
+      CSRF Positive and Negative Tests: PASSED
+      Public ArvanCloud Path: PASSED
+      Direct Origin HTTPS Path: PASSED
+      Docker Services: HEALTHY
+
+      {{ verification_success_message }}
+  delegate_to: localhost
+  become: false
+
+- name: Display the final Application Login verification result
+  ansible.builtin.debug:
+    msg:
+      - "Nginx Basic Auth is absent."
+      - "Flask Login, Logout, Session and CSRF verification passed."
+      - "Public and direct-Origin HTTPS paths passed."
+      - "Report: {{ verification_report_path }}"
+      - "{{ verification_success_message }}"
