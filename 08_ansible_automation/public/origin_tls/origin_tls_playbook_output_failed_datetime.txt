@@ -1,0 +1,113 @@
+Using /home/naser/naserrahmati_kubernetes_02/02_ansible_setup/ansible.cfg as config file
+
+PLAY [Enable trusted HTTPS on the SEO Auditor Origin] **************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [ubuntu_public]
+
+TASK [Confirm that the public deployment exists] *******************************
+ok: [ubuntu_public] => {"changed": false, "stat": {"atime": 1787938369.9416552, "attr_flags": "e", "attributes": ["extents"], "block_size": 4096, "blocks": 8, "charset": "us-ascii", "checksum": "81d6e2cf83e5216ffe691aad7adeaf9ff545e55a", "ctime": 1787938357.753698, "dev": 64768, "device_type": 0, "disk_usage_bytes": 4096, "executable": false, "exists": true, "gid": 1001, "gr_name": "rahmati", "inode": 524323, "isblk": false, "ischr": false, "isdir": false, "isfifo": false, "isgid": false, "islnk": false, "isreg": true, "issock": false, "isuid": false, "mimetype": "text/plain", "mode": "0644", "mtime": 1787938357.7579403, "nlink": 1, "path": "/opt/seo-auditor/docker-compose.yml", "pw_name": "rahmati", "readable": true, "rgrp": true, "roth": true, "rusr": true, "size": 2468, "uid": 1001, "version": "604085791", "wgrp": false, "woth": false, "writeable": true, "wusr": true, "xgrp": false, "xoth": false, "xusr": false}}
+
+TASK [Stop when the SEO Auditor is not deployed] *******************************
+ok: [ubuntu_public] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Confirm the expected domain] *********************************************
+ok: [ubuntu_public] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Confirm ArvanCloud still uses HTTP during certificate bootstrap] *********
+ok: [ubuntu_public] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Verify the existing Origin HTTP health endpoint] *************************
+ok: [ubuntu_public] => {"cache_control": "no-store, no-cache, must-revalidate, private", "changed": false, "connection": "close", "content": "healthy\n", "content_length": "8", "content_type": "text/plain", "cookies": {}, "cookies_string": "", "date": "Sat, 29 Aug 2026 11:58:15 GMT", "elapsed": 0, "expires": "0", "msg": "OK (8 bytes)", "pragma": "no-cache", "redirected": false, "referrer_policy": "no-referrer", "server": "nginx", "status": 200, "url": "http://127.0.0.1/nginx-health", "x_content_type_options": "nosniff", "x_frame_options": "DENY"}
+
+TASK [Install Snap and TLS prerequisites] **************************************
+ok: [ubuntu_public] => {"cache_update_time": 1788004700, "cache_updated": true, "changed": false}
+
+TASK [Remove conflicting OS Certbot packages] **********************************
+ok: [ubuntu_public] => {"changed": false}
+
+TASK [Enable and start the Snap socket] ****************************************
+ok: [ubuntu_public] => {"changed": false, "enabled": true, "name": "snapd.socket", "state": "started", "status": {"Accept": "no", "ActiveEnterTimestamp": "Thu 2026-08-27 10:06:45 UTC", "ActiveEnterTimestampMonotonic": "30290252", "ActiveExitTimestamp": "n/a", "ActiveExitTimestampMonotonic": "0", "ActiveState": "active", "After": "system.slice sysinit.target -.mount", "AllowIsolate": "no", "AssertResult": "yes", "AssertTimestamp": "Thu 2026-08-27 10:06:45 UTC", "AssertTimestampMonotonic": "30264856", "Backlog": "4096", "Before": "snapd.service sockets.target snapd.seeded.service snapd.autoimport.service shutdown.target", "BindIPv6Only": "default", "BlockIOAccounting": "no", "BlockIOWeight": "[not set]", "Broadcast": "no", "CPUAccounting": "yes", "CPUAffinityFromNUMA": "no", "CPUQuotaPerSecUSec": "infinity", "CPUQuotaPeriodUSec": "infinity", "CPUSchedulingPolicy": "0", "CPUSchedulingPriority": "0", "CPUSchedulingResetOnFork": "no", "CPUShares": "[not set]", "CPUUsageNSec": "2918000", "CPUWeight": "[not set]", "CacheDirectoryMode": "0755", "CanFreeze": "no", "CanIsolate": "no", "CanReload": "no", "CanStart": "yes", "CanStop": "yes", "CapabilityBoundingSet": "cap_chown cap_dac_override cap_dac_read_search cap_fowner cap_fsetid cap_kill cap_setgid cap_setuid cap_setpcap cap_linux_immutable cap_net_bind_service cap_net_broadcast cap_net_admin cap_net_raw cap_ipc_lock cap_ipc_owner cap_sys_module cap_sys_rawio cap_sys_chroot cap_sys_ptrace cap_sys_pacct cap_sys_admin cap_sys_boot cap_sys_nice cap_sys_resource cap_sys_time cap_sys_tty_config cap_mknod cap_lease cap_audit_write cap_audit_control cap_setfcap cap_mac_override cap_mac_admin cap_syslog cap_wake_alarm cap_block_suspend cap_audit_read cap_perfmon cap_bpf cap_checkpoint_restore", "CollectMode": "inactive", "ConditionResult": "yes", "ConditionTimestamp": "Thu 2026-08-27 10:06:45 UTC", "ConditionTimestampMonotonic": "30264848", "ConfigurationDirectoryMode": "0755", "Conflicts": "shutdown.target", "ControlGroup": "/system.slice/snapd.socket", "ControlPID": "0", "CoredumpFilter": "0x33", "DefaultDependencies": "yes", "DefaultMemoryLow": "0", "DefaultMemoryMin": "0", "DeferAcceptUSec": "0", "Delegate": "no", "Description": "Socket activation for snappy daemon", "DevicePolicy": "auto", "DirectoryMode": "0755", "DynamicUser": "no", "EffectiveCPUs": "0-3", "EffectiveMemoryNodes": "0", "FailureAction": "none", "FileDescriptorName": "snapd.socket", "FinalKillSignal": "9", "FlushPending": "no", "FragmentPath": "/lib/systemd/system/snapd.socket", "FreeBind": "no", "FreezerState": "running", "GID": "[not set]", "IOAccounting": "no", "IOReadBytes": "18446744073709551615", "IOReadOperations": "18446744073709551615", "IOSchedulingClass": "2", "IOSchedulingPriority": "4", "IOWeight": "[not set]", "IOWriteBytes": "18446744073709551615", "IOWriteOperations": "18446744073709551615", "IPAccounting": "no", "IPEgressBytes": "[no data]", "IPEgressPackets": "[no data]", "IPIngressBytes": "[no data]", "IPIngressPackets": "[no data]", "IPTOS": "-1", "IPTTL": "-1", "Id": "snapd.socket", "IgnoreOnIsolate": "no", "IgnoreSIGPIPE": "yes", "InactiveEnterTimestamp": "n/a", "InactiveEnterTimestampMonotonic": "0", "InactiveExitTimestamp": "Thu 2026-08-27 10:06:45 UTC", "InactiveExitTimestampMonotonic": "30268784", "InvocationID": "05b9beac4b5640ae800a756c1599cfb6", "JobRunningTimeoutUSec": "infinity", "JobTimeoutAction": "none", "JobTimeoutUSec": "infinity", "KeepAlive": "no", "KeepAliveIntervalUSec": "0", "KeepAliveProbes": "0", "KeepAliveTimeUSec": "0", "KeyringMode": "shared", "KillMode": "control-group", "KillSignal": "15", "LimitAS": "infinity", "LimitASSoft": "infinity", "LimitCORE": "infinity", "LimitCORESoft": "0", "LimitCPU": "infinity", "LimitCPUSoft": "infinity", "LimitDATA": "infinity", "LimitDATASoft": "infinity", "LimitFSIZE": "infinity", "LimitFSIZESoft": "infinity", "LimitLOCKS": "infinity", "LimitLOCKSSoft": "infinity", "LimitMEMLOCK": "65536", "LimitMEMLOCKSoft": "65536", "LimitMSGQUEUE": "819200", "LimitMSGQUEUESoft": "819200", "LimitNICE": "0", "LimitNICESoft": "0", "LimitNOFILE": "524288", "LimitNOFILESoft": "1024", "LimitNPROC": "15052", "LimitNPROCSoft": "15052", "LimitRSS": "infinity", "LimitRSSSoft": "infinity", "LimitRTPRIO": "0", "LimitRTPRIOSoft": "0", "LimitRTTIME": "infinity", "LimitRTTIMESoft": "infinity", "LimitSIGPENDING": "15052", "LimitSIGPENDINGSoft": "15052", "LimitSTACK": "infinity", "LimitSTACKSoft": "8388608", "Listen": "/run/snapd-snap.socket (Stream)", "LoadState": "loaded", "LockPersonality": "no", "LogLevelMax": "-1", "LogRateLimitBurst": "0", "LogRateLimitIntervalUSec": "0", "LogsDirectoryMode": "0755", "ManagedOOMMemoryPressure": "auto", "ManagedOOMMemoryPressureLimit": "0", "ManagedOOMPreference": "none", "ManagedOOMSwap": "auto", "Mark": "-1", "MaxConnections": "64", "MaxConnectionsPerSource": "0", "MemoryAccounting": "yes", "MemoryAvailable": "infinity", "MemoryCurrent": "0", "MemoryDenyWriteExecute": "no", "MemoryHigh": "infinity", "MemoryLimit": "infinity", "MemoryLow": "0", "MemoryMax": "infinity", "MemoryMin": "0", "MemorySwapMax": "infinity", "MessageQueueMaxMessages": "0", "MessageQueueMessageSize": "0", "MountAPIVFS": "no", "NAccepted": "0", "NConnections": "0", "NRefused": "0", "NUMAPolicy": "n/a", "Names": "snapd.socket", "NeedDaemonReload": "no", "Nice": "0", "NoDelay": "no", "NoNewPrivileges": "no", "NonBlocking": "no", "OOMScoreAdjust": "0", "OnFailureJobMode": "replace", "OnSuccessJobMode": "fail", "PassCredentials": "no", "PassPacketInfo": "no", "PassSecurity": "no", "Perpetual": "no", "PipeSize": "0", "Priority": "-1", "PrivateDevices": "no", "PrivateIPC": "no", "PrivateMounts": "no", "PrivateNetwork": "no", "PrivateTmp": "no", "PrivateUsers": "no", "ProcSubset": "all", "ProtectClock": "no", "ProtectControlGroups": "no", "ProtectHome": "no", "ProtectHostname": "no", "ProtectKernelLogs": "no", "ProtectKernelModules": "no", "ProtectKernelTunables": "no", "ProtectProc": "default", "ProtectSystem": "no", "ReceiveBuffer": "0", "RefuseManualStart": "no", "RefuseManualStop": "no", "RemoveIPC": "no", "RemoveOnStop": "no", "RequiredBy": "snapd.service snapd.seeded.service", "Requires": "-.mount system.slice sysinit.target", "RequiresMountsFor": "/run/snapd.socket /run/snapd-snap.socket", "RestartKillSignal": "15", "RestrictNamespaces": "no", "RestrictRealtime": "no", "RestrictSUIDSGID": "no", "Result": "success", "ReusePort": "no", "RuntimeDirectoryMode": "0755", "RuntimeDirectoryPreserve": "no", "SameProcessGroup": "no", "SecureBits": "0", "SendBuffer": "0", "SendSIGHUP": "no", "SendSIGKILL": "yes", "Slice": "system.slice", "SocketGroup": "root", "SocketMode": "0666", "SocketProtocol": "0", "SocketUser": "root", "StandardError": "inherit", "StandardInput": "null", "StandardOutput": "journal", "StartLimitAction": "none", "StartLimitBurst": "5", "StartLimitIntervalUSec": "10s", "StartupBlockIOWeight": "[not set]", "StartupCPUShares": "[not set]", "StartupCPUWeight": "[not set]", "StartupIOWeight": "[not set]", "StateChangeTimestamp": "Thu 2026-08-27 10:06:47 UTC", "StateChangeTimestampMonotonic": "32162099", "StateDirectoryMode": "0755", "StopWhenUnneeded": "no", "SubState": "running", "SuccessAction": "none", "SyslogFacility": "3", "SyslogLevel": "6", "SyslogLevelPrefix": "yes", "SyslogPriority": "30", "SystemCallErrorNumber": "2147483646", "TTYReset": "no", "TTYVHangup": "no", "TTYVTDisallocate": "no", "TasksAccounting": "yes", "TasksCurrent": "0", "TasksMax": "4515", "TimeoutCleanUSec": "infinity", "TimeoutUSec": "1min 30s", "TimerSlackNSec": "50000", "Timestamping": "off", "Transient": "no", "Transparent": "no", "TriggerLimitBurst": "20", "TriggerLimitIntervalUSec": "2s", "Triggers": "snapd.service", "UID": "[not set]", "UMask": "0022", "UnitFilePreset": "enabled", "UnitFileState": "enabled", "UtmpMode": "init", "WantedBy": "sockets.target", "WatchdogSignal": "6", "Writable": "no"}}
+
+TASK [Wait for Snap initialization] ********************************************
+ok: [ubuntu_public] => {"attempts": 1, "changed": false, "changed_when_result": false, "cmd": ["snap", "wait", "system", "seed.loaded"], "delta": "0:00:00.190641", "end": "2026-08-29 11:58:33.352308", "msg": "", "rc": 0, "start": "2026-08-29 11:58:33.161667", "stderr": "", "stderr_lines": [], "stdout": "", "stdout_lines": []}
+
+TASK [Install Certbot from the official Snap package] **************************
+changed: [ubuntu_public] => {"changed": true, "channel": "stable", "classic": true, "cmd": "['state', 'classic', 'channel', 'revision', 'dangerous', 'devmode', 'certbot']", "revision": null, "snap_names": ["certbot"], "snaps_installed": ["certbot"], "version": {"architecture": "amd64", "kernel": "5.15.0-190-generic", "series": "16", "snap": "2.76.3+ubuntu22.04", "snapd": "2.76.3+ubuntu22.04", "ubuntu": "22.04"}}
+
+TASK [Create the conventional Certbot command link] ****************************
+changed: [ubuntu_public] => {"changed": true, "dest": "/usr/local/bin/certbot", "gid": 0, "group": "root", "mode": "0777", "owner": "root", "size": 17, "src": "/snap/bin/certbot", "state": "link", "uid": 0}
+
+TASK [Allow HTTPS through UFW] *************************************************
+changed: [ubuntu_public] => {"changed": true, "commands": ["/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules", "/usr/sbin/ufw --version", "/usr/sbin/ufw allow from any to any port 443 proto tcp comment 'HTTPS for ArvanCloud Origin'", "/usr/sbin/ufw status verbose", "/usr/bin/grep -h '^### tuple' /lib/ufw/user.rules /lib/ufw/user6.rules /etc/ufw/user.rules /etc/ufw/user6.rules /var/lib/ufw/user.rules /var/lib/ufw/user6.rules"], "msg": "Status: active\nLogging: on (low)\nDefault: deny (incoming), allow (outgoing), deny (routed)\nNew profiles: skip\n\nTo                         Action      From\n--                         ------      ----\n22/tcp                     ALLOW IN    Anywhere                   # SSH\n80/tcp                     ALLOW IN    Anywhere                   # ArvanCloud origin HTTP\n443/tcp                    ALLOW IN    Anywhere                   # HTTPS for ArvanCloud Origin\n22/tcp (v6)                ALLOW IN    Anywhere (v6)              # SSH\n80/tcp (v6)                ALLOW IN    Anywhere (v6)              # ArvanCloud origin HTTP\n443/tcp (v6)               ALLOW IN    Anywhere (v6)              # HTTPS for ArvanCloud Origin"}
+
+TASK [Create ACME and renewal-hook directories] ********************************
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor/certbot/www', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": false, "gid": 0, "group": "root", "item": {"mode": "0755", "path": "/opt/seo-auditor/certbot/www"}, "mode": "0755", "owner": "root", "path": "/opt/seo-auditor/certbot/www", "size": 4096, "state": "directory", "uid": 0}
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor/certbot/www/.well-known', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": false, "gid": 0, "group": "root", "item": {"mode": "0755", "path": "/opt/seo-auditor/certbot/www/.well-known"}, "mode": "0755", "owner": "root", "path": "/opt/seo-auditor/certbot/www/.well-known", "size": 4096, "state": "directory", "uid": 0}
+ok: [ubuntu_public] => (item={'path': '/opt/seo-auditor/certbot/www/.well-known/acme-challenge', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": false, "gid": 0, "group": "root", "item": {"mode": "0755", "path": "/opt/seo-auditor/certbot/www/.well-known/acme-challenge"}, "mode": "0755", "owner": "root", "path": "/opt/seo-auditor/certbot/www/.well-known/acme-challenge", "size": 4096, "state": "directory", "uid": 0}
+changed: [ubuntu_public] => (item={'path': '/etc/letsencrypt', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": true, "gid": 0, "group": "root", "item": {"mode": "0755", "path": "/etc/letsencrypt"}, "mode": "0755", "owner": "root", "path": "/etc/letsencrypt", "size": 4096, "state": "directory", "uid": 0}
+changed: [ubuntu_public] => (item={'path': '/etc/letsencrypt/renewal-hooks/deploy', 'mode': '0755'}) => {"ansible_loop_var": "item", "changed": true, "gid": 0, "group": "root", "item": {"mode": "0755", "path": "/etc/letsencrypt/renewal-hooks/deploy"}, "mode": "0755", "owner": "root", "path": "/etc/letsencrypt/renewal-hooks/deploy", "size": 4096, "state": "directory", "uid": 0}
+
+TASK [Render the TLS-capable Docker Compose configuration] *********************
+changed: [ubuntu_public] => {"backup_file": "/opt/seo-auditor/docker-compose.yml.852413.2026-08-29@11:59:19~", "changed": true, "checksum": "218984ed89bcdf290d5afcbe3eae732d3724dff5", "dest": "/opt/seo-auditor/docker-compose.yml", "gid": 1001, "group": "rahmati", "md5sum": "7815c1658cd887083f6ebe7f08546056", "mode": "0644", "owner": "rahmati", "size": 2566, "src": "/home/rahmati/.ansible/tmp/ansible-tmp-1788004757.0621223-1124081-214705250684482/.source.yml", "state": "file", "uid": 1001}
+
+TASK [Render the temporary HTTP and ACME Nginx configuration] ******************
+changed: [ubuntu_public] => {"backup_file": "/opt/seo-auditor/nginx/10-seo-auditor.conf.852476.2026-08-29@11:59:21~", "changed": true, "checksum": "e1ff074ef1532de7a19634fedfdf542839b99a50", "dest": "/opt/seo-auditor/nginx/10-seo-auditor.conf", "gid": 1001, "group": "rahmati", "md5sum": "ade4e531fb432d3895e93180088dedde", "mode": "0644", "owner": "rahmati", "size": 2725, "src": "/home/rahmati/.ansible/tmp/ansible-tmp-1788004759.4678864-1124130-237751408587760/.source.conf", "state": "file", "uid": 1001}
+
+TASK [Validate the TLS-capable Compose configuration] **************************
+ok: [ubuntu_public] => {"changed": false, "changed_when_result": false, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "config", "--quiet"], "delta": "0:00:00.357932", "end": "2026-08-29 11:59:22.609155", "msg": "", "rc": 0, "start": "2026-08-29 11:59:22.251223", "stderr": "", "stderr_lines": [], "stdout": "", "stdout_lines": []}
+
+TASK [Test the temporary Nginx configuration] **********************************
+ok: [ubuntu_public] => {"changed": false, "changed_when_result": false, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "run", "--rm", "--no-deps", "proxy", "nginx", "-t"], "delta": "0:00:01.710538", "end": "2026-08-29 11:59:25.259532", "msg": "", "rc": 0, "start": "2026-08-29 11:59:23.548994", "stderr": " Container seo-auditor-public-proxy-run-6189a78690a7 Creating \n Container seo-auditor-public-proxy-run-6189a78690a7 Created \nnginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful", "stderr_lines": [" Container seo-auditor-public-proxy-run-6189a78690a7 Creating ", " Container seo-auditor-public-proxy-run-6189a78690a7 Created ", "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok", "nginx: configuration file /etc/nginx/nginx.conf test is successful"], "stdout": "/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration\n/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/\n/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh\n10-listen-on-ipv6-by-default.sh: info: can not modify /etc/nginx/conf.d/default.conf (read-only file system?)\n/docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh\n/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh\n/docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh\n/docker-entrypoint.sh: Configuration complete; ready for start up", "stdout_lines": ["/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration", "/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/", "/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh", "10-listen-on-ipv6-by-default.sh: info: can not modify /etc/nginx/conf.d/default.conf (read-only file system?)", "/docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh", "/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh", "/docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh", "/docker-entrypoint.sh: Configuration complete; ready for start up"]}
+
+TASK [Recreate Nginx with the ACME webroot mounted] ****************************
+changed: [ubuntu_public] => {"changed": true, "changed_when_result": true, "cmd": ["docker", "compose", "--env-file", ".env", "-f", "docker-compose.yml", "up", "--detach", "--force-recreate", "--no-deps", "proxy"], "delta": "0:00:02.247930", "end": "2026-08-29 11:59:28.429651", "msg": "", "rc": 0, "start": "2026-08-29 11:59:26.181721", "stderr": " Container seo-auditor-public-proxy-1 Recreate \n Container seo-auditor-public-proxy-1 Recreated \n Container seo-auditor-public-proxy-1 Starting \n Container seo-auditor-public-proxy-1 Started ", "stderr_lines": [" Container seo-auditor-public-proxy-1 Recreate ", " Container seo-auditor-public-proxy-1 Recreated ", " Container seo-auditor-public-proxy-1 Starting ", " Container seo-auditor-public-proxy-1 Started "], "stdout": "", "stdout_lines": []}
+
+TASK [Wait for Origin HTTP] ****************************************************
+ok: [ubuntu_public] => {"changed": false, "elapsed": 0, "match_groupdict": {}, "match_groups": [], "path": null, "port": 80, "search_regex": null, "state": "started"}
+
+TASK [Create a unique ACME path test file] *************************************
+[ERROR]: Task failed: Finalization of task args for 'ansible.builtin.copy' failed: Error while resolving value for 'content': 'ansible_date_time' is undefined
+
+Task failed.
+Origin: /home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/origin_tls/enable_origin_tls.yml:226:7
+
+224         timeout: 60
+225
+226     - name: Create a unique ACME path test file
+          ^ column 7
+
+<<< caused by >>>
+
+Finalization of task args for 'ansible.builtin.copy' failed.
+Origin: /home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/origin_tls/enable_origin_tls.yml:227:7
+
+225
+226     - name: Create a unique ACME path test file
+227       ansible.builtin.copy:
+          ^ column 7
+
+<<< caused by >>>
+
+Error while resolving value for 'content': 'ansible_date_time' is undefined
+Origin: /home/naser/naserrahmati_kubernetes_02/08_ansible_automation/public/origin_tls/enable_origin_tls.yml:232:18
+
+230             ansible_date_time.epoch
+231           }}
+232         content: "origin-acme-ready-{{ ansible_date_time.epoch }}\n"
+                     ^ column 18
+
+fatal: [ubuntu_public]: FAILED! => {"changed": false, "msg": "Task failed: Finalization of task args for 'ansible.builtin.copy' failed: Error while resolving value for 'content': 'ansible_date_time' is undefined"}
+
+PLAY RECAP *********************************************************************
+ubuntu_public              : ok=20   changed=7    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+

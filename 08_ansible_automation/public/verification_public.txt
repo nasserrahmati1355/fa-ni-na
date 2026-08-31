@@ -1,0 +1,272 @@
+========================================
+ArvanCloud Public Deployment Verification
+========================================
+
+Generated at:
+2026-08-28T22:47:56+03:30
+
+Domain:
+nhref.ir
+
+Origin:
+185.192.114.171:80
+
+ArvanCloud origin protocol expected by this package:
+http
+
+----------------------------------------
+Public DNS
+----------------------------------------
+
+185.143.233.238 STREAM nhref.ir
+185.143.233.238 DGRAM  
+185.143.233.238 RAW    
+185.143.234.238 STREAM 
+185.143.234.238 DGRAM  
+185.143.234.238 RAW    
+
+----------------------------------------
+Docker Compose Status
+----------------------------------------
+
+NAME                           IMAGE                                                                     COMMAND                  SERVICE   CREATED        STATUS                  PORTS
+seo-auditor-public-backend-1   sha256:60983d38ebd6e23a5b169a6fb0e36c8e09ee9f4ca6a3bd33d08b33d6f9cec34c   "gunicorn --bind=0.0…"   backend   2 hours ago    Up 2 hours (healthy)    8000/tcp
+seo-auditor-public-db-1        mariadb:10.11.18-jammy                                                    "docker-entrypoint.s…"   db        13 hours ago   Up 13 hours (healthy)   3306/tcp
+seo-auditor-public-proxy-1     nginx:1.30.4-alpine                                                       "/docker-entrypoint.…"   proxy     2 hours ago    Up 2 hours (healthy)    0.0.0.0:80->80/tcp, [::]:80->80/tcp
+
+----------------------------------------
+Nginx Configuration Test
+----------------------------------------
+
+
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+----------------------------------------
+Origin Health Tests
+----------------------------------------
+
+Nginx health status: 200
+Nginx response: healthy
+
+Backend health status: 200
+Backend response: {"status":"ok"}
+
+----------------------------------------
+Application Tests
+----------------------------------------
+
+Origin local test: PASSED
+Direct origin test from Controller: PASSED
+Public ArvanCloud test: PASSED
+SEO Auditor UI detected: PASSED
+
+----------------------------------------
+ArvanCloud Edge Certificate
+----------------------------------------
+
+subject=CN=nhref.ir
+issuer=C=US, O=Let's Encrypt, CN=YE2
+notBefore=Aug 28 13:01:07 2026 GMT
+notAfter=Nov 26 13:01:06 2026 GMT
+sha256 Fingerprint=89:AA:DC:68:2B:C7:D7:87:19:27:3D:FA:E3:7F:17:5B:FD:6F:B5:E1:7D:51:1D:B5:23:02:43:C6:7A:0B:6D:03
+
+----------------------------------------
+Recent Compose Logs
+----------------------------------------
+
+db-1  | 2026-08-28T05:50:45.885583565Z 2026-08-28 05:50:45+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:10.11.18+maria~ubu2204 started.
+db-1  | 2026-08-28T05:50:46.603458355Z 2026-08-28 05:50:46+00:00 [Warn] [Entrypoint]: /sys/fs/cgroup///memory.pressure not writable, functionality unavailable to MariaDB
+db-1  | 2026-08-28T05:50:46.617714937Z 2026-08-28 05:50:46+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+db-1  | 2026-08-28T05:50:46.645366407Z 2026-08-28 05:50:46+00:00 [Note] [Entrypoint]: Entrypoint script for MariaDB Server 1:10.11.18+maria~ubu2204 started.
+db-1  | 2026-08-28T05:50:47.292864359Z 2026-08-28 05:50:47+00:00 [Note] [Entrypoint]: Initializing database files
+db-1  | 2026-08-28T05:50:47.513023843Z 2026-08-28  5:50:47 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+db-1  | 2026-08-28T05:50:47.513078566Z create_uring failed: falling back to libaio
+db-1  | 2026-08-28T05:50:48.750265356Z 2026-08-28 05:50:48+00:00 [Note] [Entrypoint]: Database files initialized
+db-1  | 2026-08-28T05:50:48.758476418Z 2026-08-28 05:50:48+00:00 [Note] [Entrypoint]: Starting temporary server
+db-1  | 2026-08-28T05:50:48.767146792Z 2026-08-28 05:50:48+00:00 [Note] [Entrypoint]: Waiting for server startup
+db-1  | 2026-08-28T05:50:48.818683170Z 2026-08-28  5:50:48 0 [Note] Starting MariaDB 10.11.18-MariaDB-ubu2204 source revision 197f92bee02d8e836f529f37625be69b83e7acbd server_uid WVhXYZ2GBF2V745H72YRjHTRLtU= as process 94
+db-1  | 2026-08-28T05:50:48.936177710Z 2026-08-28  5:50:48 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+db-1  | 2026-08-28T05:50:48.945805384Z 2026-08-28  5:50:48 0 [Note] InnoDB: Number of transaction pools: 1
+db-1  | 2026-08-28T05:50:48.945893817Z 2026-08-28  5:50:48 0 [Note] InnoDB: Using crc32 + pclmulqdq instructions
+db-1  | 2026-08-28T05:50:48.945919711Z 2026-08-28  5:50:48 0 [Note] mariadbd: O_TMPFILE is not supported on /tmp (disabling future attempts)
+db-1  | 2026-08-28T05:50:48.946352902Z 2026-08-28  5:50:48 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+db-1  | 2026-08-28T05:50:48.946620965Z create_uring failed: falling back to libaio
+db-1  | 2026-08-28T05:50:48.947056662Z 2026-08-28  5:50:48 0 [Note] InnoDB: Using Linux native AIO
+db-1  | 2026-08-28T05:50:48.950256926Z 2026-08-28  5:50:48 0 [Note] InnoDB: innodb_buffer_pool_size_max=8388608m, innodb_buffer_pool_size=128m
+db-1  | 2026-08-28T05:50:48.955707601Z 2026-08-28  5:50:48 0 [Note] InnoDB: Completed initialization of buffer pool
+db-1  | 2026-08-28T05:50:48.958939187Z 2026-08-28  5:50:48 0 [Note] InnoDB: File system buffers for log disabled (block size=512 bytes)
+db-1  | 2026-08-28T05:50:49.042972436Z 2026-08-28  5:50:49 0 [Note] InnoDB: End of log at LSN=44554
+db-1  | 2026-08-28T05:50:49.083056167Z 2026-08-28  5:50:49 0 [Note] InnoDB: 128 rollback segments are active.
+db-1  | 2026-08-28T05:50:49.083499801Z 2026-08-28  5:50:49 0 [Note] InnoDB: Setting file './ibtmp1' size to 12.000MiB. Physically writing the file full; Please wait ...
+db-1  | 2026-08-28T05:50:49.083527703Z 2026-08-28  5:50:49 0 [Note] InnoDB: File './ibtmp1' size is now 12.000MiB.
+db-1  | 2026-08-28T05:50:49.086538277Z 2026-08-28  5:50:49 0 [Note] InnoDB: log sequence number 44554; transaction id 14
+db-1  | 2026-08-28T05:50:49.086603329Z 2026-08-28  5:50:49 0 [Note] Plugin 'FEEDBACK' is disabled.
+db-1  | 2026-08-28T05:50:49.104222583Z 2026-08-28  5:50:49 0 [Note] mariadbd: ready for connections.
+db-1  | 2026-08-28T05:50:49.104267618Z Version: '10.11.18-MariaDB-ubu2204'  socket: '/run/mysqld/mysqld.sock'  port: 0  mariadb.org binary distribution
+db-1  | 2026-08-28T05:50:49.833369467Z 2026-08-28 05:50:49+00:00 [Note] [Entrypoint]: Temporary server started.
+db-1  | 2026-08-28T05:50:53.920201446Z 2026-08-28 05:50:53+00:00 [Note] [Entrypoint]: Creating database example
+db-1  | 2026-08-28T05:50:53.927086194Z 2026-08-28 05:50:53+00:00 [Note] [Entrypoint]: Securing system users (equivalent to running mysql_secure_installation)
+db-1  | 2026-08-28T05:50:53.966244387Z 
+db-1  | 2026-08-28T05:50:53.975041491Z 2026-08-28 05:50:53+00:00 [Note] [Entrypoint]: Stopping temporary server
+db-1  | 2026-08-28T05:50:53.975442508Z 2026-08-28  5:50:53 0 [Note] mariadbd (initiated by: unknown): Normal shutdown
+db-1  | 2026-08-28T05:50:53.976274924Z 2026-08-28  5:50:53 0 [Note] InnoDB: FTS optimize thread exiting.
+db-1  | 2026-08-28T05:50:54.020206880Z 2026-08-28  5:50:54 0 [Note] InnoDB: Starting shutdown...
+db-1  | 2026-08-28T05:50:54.020578286Z 2026-08-28  5:50:54 0 [Note] InnoDB: Dumping buffer pool(s) to /var/lib/mysql/ib_buffer_pool
+db-1  | 2026-08-28T05:50:54.021558667Z 2026-08-28  5:50:54 0 [Note] InnoDB: Buffer pool(s) dump completed at 260828  5:50:54
+db-1  | 2026-08-28T05:50:54.074883198Z 2026-08-28  5:50:54 0 [Note] InnoDB: Removed temporary tablespace data file: "./ibtmp1"
+db-1  | 2026-08-28T05:50:54.074943725Z 2026-08-28  5:50:54 0 [Note] Shutdown completed; log sequence number 44926; transaction id 15
+db-1  | 2026-08-28T05:50:54.096783610Z 2026-08-28  5:50:54 0 [Note] mariadbd: Shutdown complete
+db-1  | 2026-08-28T05:50:54.124475069Z 2026-08-28 05:50:54+00:00 [Note] [Entrypoint]: Temporary server stopped
+db-1  | 2026-08-28T05:50:54.124658568Z 
+db-1  | 2026-08-28T05:50:54.132291261Z 2026-08-28 05:50:54+00:00 [Note] [Entrypoint]: MariaDB init process done. Ready for start up.
+db-1  | 2026-08-28T05:50:54.132333857Z 
+db-1  | 2026-08-28T05:50:54.187192777Z 2026-08-28  5:50:54 0 [Note] Starting MariaDB 10.11.18-MariaDB-ubu2204 source revision 197f92bee02d8e836f529f37625be69b83e7acbd server_uid WVhXYZ2GBF2V745H72YRjHTRLtU= as process 1
+db-1  | 2026-08-28T05:50:54.292245167Z 2026-08-28  5:50:54 0 [Note] InnoDB: Compressed tables use zlib 1.2.11
+db-1  | 2026-08-28T05:50:54.302014086Z 2026-08-28  5:50:54 0 [Note] InnoDB: Number of transaction pools: 1
+db-1  | 2026-08-28T05:50:54.302059475Z 2026-08-28  5:50:54 0 [Note] InnoDB: Using crc32 + pclmulqdq instructions
+db-1  | 2026-08-28T05:50:54.302077355Z 2026-08-28  5:50:54 0 [Note] mariadbd: O_TMPFILE is not supported on /tmp (disabling future attempts)
+db-1  | 2026-08-28T05:50:54.302569305Z 2026-08-28  5:50:54 0 [Warning] mariadbd: io_uring_queue_init() failed with EPERM: sysctl kernel.io_uring_disabled has the value 2, or 1 and the user of the process is not a member of sysctl kernel.io_uring_group. (see man 2 io_uring_setup).
+db-1  | 2026-08-28T05:50:54.302744101Z create_uring failed: falling back to libaio
+db-1  | 2026-08-28T05:50:54.303237395Z 2026-08-28  5:50:54 0 [Note] InnoDB: Using Linux native AIO
+db-1  | 2026-08-28T05:50:54.306557887Z 2026-08-28  5:50:54 0 [Note] InnoDB: innodb_buffer_pool_size_max=8388608m, innodb_buffer_pool_size=128m
+db-1  | 2026-08-28T05:50:54.310453472Z 2026-08-28  5:50:54 0 [Note] InnoDB: Completed initialization of buffer pool
+db-1  | 2026-08-28T05:50:54.314295519Z 2026-08-28  5:50:54 0 [Note] InnoDB: File system buffers for log disabled (block size=512 bytes)
+db-1  | 2026-08-28T05:50:54.396793531Z 2026-08-28  5:50:54 0 [Note] InnoDB: End of log at LSN=44926
+db-1  | 2026-08-28T05:50:54.443151206Z 2026-08-28  5:50:54 0 [Note] InnoDB: 128 rollback segments are active.
+db-1  | 2026-08-28T05:50:54.443940959Z 2026-08-28  5:50:54 0 [Note] InnoDB: Setting file './ibtmp1' size to 12.000MiB. Physically writing the file full; Please wait ...
+db-1  | 2026-08-28T05:50:54.444157991Z 2026-08-28  5:50:54 0 [Note] InnoDB: File './ibtmp1' size is now 12.000MiB.
+db-1  | 2026-08-28T05:50:54.449784639Z 2026-08-28  5:50:54 0 [Note] InnoDB: log sequence number 44926; transaction id 15
+db-1  | 2026-08-28T05:50:54.450079731Z 2026-08-28  5:50:54 0 [Note] Plugin 'FEEDBACK' is disabled.
+db-1  | 2026-08-28T05:50:54.450410340Z 2026-08-28  5:50:54 0 [Note] InnoDB: Loading buffer pool(s) from /var/lib/mysql/ib_buffer_pool
+db-1  | 2026-08-28T05:50:54.453334945Z 2026-08-28  5:50:54 0 [Warning] You need to use --log-bin to make --expire-logs-days or --binlog-expire-logs-seconds work.
+db-1       | 2026-08-28T05:50:54.453530331Z 2026-08-28  5:50:54 0 [Note] InnoDB: Buffer pool(s) load completed at 260828  5:50:54
+db-1       | 2026-08-28T05:50:54.460304166Z 2026-08-28  5:50:54 0 [Note] Server socket created on IP: '0.0.0.0', port: '3306'.
+db-1       | 2026-08-28T05:50:54.460346135Z 2026-08-28  5:50:54 0 [Note] Server socket created on IP: '::', port: '3306'.
+db-1       | 2026-08-28T05:50:54.478733160Z 2026-08-28  5:50:54 0 [Note] mariadbd: ready for connections.
+db-1       | 2026-08-28T05:50:54.478775933Z Version: '10.11.18-MariaDB-ubu2204'  socket: '/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution
+proxy-1    | 2026-08-28T17:33:20.440328429Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+backend-1  | 2026-08-28T19:04:35.891774919Z 127.0.0.1 - - [28/Aug/2026:19:04:35 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:04:46.557060648Z 127.0.0.1 - - [28/Aug/2026:19:04:46 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:04:57.199775131Z 127.0.0.1 - - [28/Aug/2026:19:04:57 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:05:07.880613891Z 127.0.0.1 - - [28/Aug/2026:19:05:07 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:05:18.626497806Z 127.0.0.1 - - [28/Aug/2026:19:05:18 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:05:29.374391071Z 127.0.0.1 - - [28/Aug/2026:19:05:29 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:05:40.029362388Z 127.0.0.1 - - [28/Aug/2026:19:05:40 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:05:50.726795639Z 127.0.0.1 - - [28/Aug/2026:19:05:50 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:06:01.466942951Z 127.0.0.1 - - [28/Aug/2026:19:06:01 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:06:12.153503450Z 127.0.0.1 - - [28/Aug/2026:19:06:12 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:06:22.933600965Z 127.0.0.1 - - [28/Aug/2026:19:06:22 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:06:33.626090347Z 127.0.0.1 - - [28/Aug/2026:19:06:33 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:06:44.358220277Z 127.0.0.1 - - [28/Aug/2026:19:06:44 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:06:55.038927118Z 127.0.0.1 - - [28/Aug/2026:19:06:55 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:07:05.754679167Z 127.0.0.1 - - [28/Aug/2026:19:07:05 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:07:16.424581347Z 127.0.0.1 - - [28/Aug/2026:19:07:16 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:07:27.117241346Z 127.0.0.1 - - [28/Aug/2026:19:07:27 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:07:37.848900843Z 127.0.0.1 - - [28/Aug/2026:19:07:37 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:07:48.530640496Z 127.0.0.1 - - [28/Aug/2026:19:07:48 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:07:59.175306442Z 127.0.0.1 - - [28/Aug/2026:19:07:59 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:08:09.972881814Z 127.0.0.1 - - [28/Aug/2026:19:08:09 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:08:20.669382436Z 127.0.0.1 - - [28/Aug/2026:19:08:20 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:08:31.374439690Z 127.0.0.1 - - [28/Aug/2026:19:08:31 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:08:42.107428024Z 127.0.0.1 - - [28/Aug/2026:19:08:42 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:08:52.770694863Z 127.0.0.1 - - [28/Aug/2026:19:08:52 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:09:03.442966800Z 127.0.0.1 - - [28/Aug/2026:19:09:03 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:09:14.052497544Z 127.0.0.1 - - [28/Aug/2026:19:09:14 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:09:24.683006567Z 127.0.0.1 - - [28/Aug/2026:19:09:24 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:09:35.395001232Z 127.0.0.1 - - [28/Aug/2026:19:09:35 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:09:46.056701381Z 127.0.0.1 - - [28/Aug/2026:19:09:46 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:09:56.697267767Z 127.0.0.1 - - [28/Aug/2026:19:09:56 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:10:07.384035937Z 127.0.0.1 - - [28/Aug/2026:19:10:07 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:10:18.035835864Z 127.0.0.1 - - [28/Aug/2026:19:10:18 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:10:28.757390310Z 127.0.0.1 - - [28/Aug/2026:19:10:28 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:10:39.409415105Z 127.0.0.1 - - [28/Aug/2026:19:10:39 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:10:50.059302340Z 127.0.0.1 - - [28/Aug/2026:19:10:50 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:11:00.702897332Z 127.0.0.1 - - [28/Aug/2026:19:11:00 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:11:11.395668771Z 127.0.0.1 - - [28/Aug/2026:19:11:11 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:11:22.049666412Z 127.0.0.1 - - [28/Aug/2026:19:11:22 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:11:32.921466928Z 127.0.0.1 - - [28/Aug/2026:19:11:32 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:11:43.556321402Z 127.0.0.1 - - [28/Aug/2026:19:11:43 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:11:54.182712601Z 127.0.0.1 - - [28/Aug/2026:19:11:54 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:12:04.873271841Z 127.0.0.1 - - [28/Aug/2026:19:12:04 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:12:15.553799882Z 127.0.0.1 - - [28/Aug/2026:19:12:15 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:12:26.249446462Z 127.0.0.1 - - [28/Aug/2026:19:12:26 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:12:36.959520315Z 127.0.0.1 - - [28/Aug/2026:19:12:36 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:12:47.615170377Z 127.0.0.1 - - [28/Aug/2026:19:12:47 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:12:58.356413243Z 127.0.0.1 - - [28/Aug/2026:19:12:58 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:13:09.028757419Z 127.0.0.1 - - [28/Aug/2026:19:13:09 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:13:19.696586281Z 127.0.0.1 - - [28/Aug/2026:19:13:19 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:13:30.379593743Z 127.0.0.1 - - [28/Aug/2026:19:13:30 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:13:41.057433889Z 127.0.0.1 - - [28/Aug/2026:19:13:41 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:13:51.735573646Z 127.0.0.1 - - [28/Aug/2026:19:13:51 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:14:02.411463414Z 127.0.0.1 - - [28/Aug/2026:19:14:02 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:14:13.140480586Z 127.0.0.1 - - [28/Aug/2026:19:14:13 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:14:23.868831772Z 127.0.0.1 - - [28/Aug/2026:19:14:23 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:14:34.635539537Z 127.0.0.1 - - [28/Aug/2026:19:14:34 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+proxy-1    | 2026-08-28T17:33:20.440526618Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+proxy-1    | 2026-08-28T17:33:20.442449403Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+proxy-1    | 2026-08-28T17:33:20.455198051Z 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+proxy-1    | 2026-08-28T17:33:20.504002582Z 10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+proxy-1    | 2026-08-28T17:33:20.505271453Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
+proxy-1    | 2026-08-28T17:33:20.505936483Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+proxy-1    | 2026-08-28T17:33:20.518104601Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+proxy-1    | 2026-08-28T17:33:20.524232628Z /docker-entrypoint.sh: Configuration complete; ready for start up
+proxy-1    | 2026-08-28T17:33:20.571930723Z 2026/08/28 17:33:20 [notice] 7#7: using the "epoll" event method
+proxy-1    | 2026-08-28T17:33:20.572016798Z 2026/08/28 17:33:20 [notice] 7#7: nginx/1.30.4
+proxy-1    | 2026-08-28T17:33:20.572047257Z 2026/08/28 17:33:20 [notice] 7#7: built by gcc 15.2.0 (Alpine 15.2.0) 
+proxy-1    | 2026-08-28T17:33:20.572130790Z 2026/08/28 17:33:20 [notice] 7#7: OS: Linux 5.15.0-190-generic
+proxy-1    | 2026-08-28T17:33:20.572169895Z 2026/08/28 17:33:20 [notice] 7#7: getrlimit(RLIMIT_NOFILE): 1024:524288
+proxy-1    | 2026-08-28T17:33:20.572562822Z 2026/08/28 17:33:20 [notice] 7#7: start worker processes
+proxy-1    | 2026-08-28T17:33:20.573288209Z 2026/08/28 17:33:20 [notice] 7#7: start worker process 31
+backend-1  | 2026-08-28T19:14:45.295633980Z 127.0.0.1 - - [28/Aug/2026:19:14:45 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:14:55.931877832Z 127.0.0.1 - - [28/Aug/2026:19:14:55 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:15:06.697795160Z 127.0.0.1 - - [28/Aug/2026:19:15:06 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:15:17.386269932Z 127.0.0.1 - - [28/Aug/2026:19:15:17 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:15:28.057132464Z 127.0.0.1 - - [28/Aug/2026:19:15:28 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:15:38.855622759Z 127.0.0.1 - - [28/Aug/2026:19:15:38 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:15:49.658964578Z 127.0.0.1 - - [28/Aug/2026:19:15:49 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:16:00.366409862Z 127.0.0.1 - - [28/Aug/2026:19:16:00 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:16:11.042565945Z 127.0.0.1 - - [28/Aug/2026:19:16:11 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:16:21.744464291Z 127.0.0.1 - - [28/Aug/2026:19:16:21 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:16:32.415181789Z 127.0.0.1 - - [28/Aug/2026:19:16:32 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:16:43.131894999Z 127.0.0.1 - - [28/Aug/2026:19:16:43 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:16:53.792418466Z 127.0.0.1 - - [28/Aug/2026:19:16:53 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:17:04.445363222Z 127.0.0.1 - - [28/Aug/2026:19:17:04 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:17:10.544460576Z 172.18.0.3 - - [28/Aug/2026:19:17:10 +0000] "HEAD / HTTP/1.1" 200 0 "-" "curl/7.76.1"
+backend-1  | 2026-08-28T19:17:15.077099168Z 127.0.0.1 - - [28/Aug/2026:19:17:15 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:17:25.808621790Z 127.0.0.1 - - [28/Aug/2026:19:17:25 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:17:36.465061576Z 127.0.0.1 - - [28/Aug/2026:19:17:36 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:17:47.250281912Z 127.0.0.1 - - [28/Aug/2026:19:17:47 +0000] "GET /health HTTP/1.1" 200 16 "-" "Python-urllib/3.12"
+backend-1  | 2026-08-28T19:17:47.403229736Z 172.18.0.3 - - [28/Aug/2026:19:17:47 +0000] "GET /health HTTP/1.1" 200 16 "-" "ansible-httpget"
+backend-1  | 2026-08-28T19:17:48.564271053Z 172.18.0.3 - - [28/Aug/2026:19:17:48 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget"
+backend-1  | 2026-08-28T19:17:49.943951823Z 172.18.0.3 - - [28/Aug/2026:19:17:49 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget"
+backend-1  | 2026-08-28T19:17:53.534782821Z 172.18.0.3 - - [28/Aug/2026:19:17:53 +0000] "GET /?deployment_check=1787944672 HTTP/1.1" 200 5578 "-" "ansible-httpget"
+proxy-1    | 2026-08-28T17:33:20.575788383Z 2026/08/28 17:33:20 [notice] 7#7: start worker process 32
+proxy-1    | 2026-08-28T17:33:20.575825326Z 2026/08/28 17:33:20 [notice] 7#7: start worker process 33
+proxy-1    | 2026-08-28T17:33:20.575843337Z 2026/08/28 17:33:20 [notice] 7#7: start worker process 34
+proxy-1    | 2026-08-28T17:33:29.199705656Z 172.18.0.1 - seo-admin [28/Aug/2026:17:33:29 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T17:36:15.804886720Z 194.32.122.5 - - [28/Aug/2026:17:36:15 +0000] "GET / HTTP/1.1" 401 574 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36" "194.32.122.5"
+proxy-1    | 2026-08-28T17:36:16.349768707Z 194.32.122.5 - - [28/Aug/2026:17:36:16 +0000] "GET /favicon.ico HTTP/1.1" 401 574 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" "194.32.122.5"
+proxy-1    | 2026-08-28T18:01:53.084979939Z 172.18.0.1 - seo-admin [28/Aug/2026:18:01:53 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T18:02:02.296482004Z 172.18.0.1 - seo-admin [28/Aug/2026:18:02:02 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T18:02:03.697074907Z 77.237.76.83 - seo-admin [28/Aug/2026:18:02:03 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T18:11:42.101408046Z 77.237.76.83 - - [28/Aug/2026:18:11:42 +0000] "HEAD / HTTP/1.1" 401 0 "-" "curl/7.76.1" "-"
+proxy-1    | 2026-08-28T18:12:52.753737121Z 77.237.76.83 - seo-admin [28/Aug/2026:18:12:52 +0000] "GET / HTTP/1.1" 200 5578 "-" "curl/7.76.1" "-"
+proxy-1    | 2026-08-28T18:18:33.229211313Z 172.18.0.1 - seo-admin [28/Aug/2026:18:18:33 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T18:18:34.508757189Z 77.237.76.83 - seo-admin [28/Aug/2026:18:18:34 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T18:46:24.393997816Z 172.18.0.1 - seo-admin [28/Aug/2026:18:46:24 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T18:46:25.666140571Z 77.237.76.83 - seo-admin [28/Aug/2026:18:46:25 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T19:15:47.475449807Z 77.237.76.83 - - [28/Aug/2026:19:15:47 +0000] "HEAD / HTTP/1.1" 401 0 "-" "curl/7.76.1" "-"
+proxy-1    | 2026-08-28T19:16:39.961275098Z 77.237.76.83 - - [28/Aug/2026:19:16:39 +0000] "HEAD / HTTP/1.1" 401 0 "-" "curl/7.76.1" "-"
+proxy-1    | 2026-08-28T19:16:49.509302782Z 77.237.76.83 - - [28/Aug/2026:19:16:49 +0000] "HEAD / HTTP/1.1" 401 0 "-" "curl/7.76.1" "77.237.76.83"
+proxy-1    | 2026-08-28T19:17:10.544305420Z 77.237.76.83 - seo-admin [28/Aug/2026:19:17:10 +0000] "HEAD / HTTP/1.1" 200 0 "-" "curl/7.76.1" "77.237.76.83"
+proxy-1    | 2026-08-28T19:17:48.565220602Z 172.18.0.1 - seo-admin [28/Aug/2026:19:17:48 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T19:17:49.944289511Z 77.237.76.83 - seo-admin [28/Aug/2026:19:17:49 +0000] "GET / HTTP/1.1" 200 5578 "-" "ansible-httpget" "-"
+proxy-1    | 2026-08-28T19:17:52.185864196Z 77.237.76.83 - - [28/Aug/2026:19:17:52 +0000] "GET / HTTP/1.1" 401 172 "-" "ansible-httpget" "77.237.76.83"
+proxy-1    | 2026-08-28T19:17:53.534816875Z 77.237.76.83 - seo-admin [28/Aug/2026:19:17:53 +0000] "GET /?deployment_check=1787944672 HTTP/1.1" 200 5578 "-" "ansible-httpget" "77.237.76.83"
+
+----------------------------------------
+Final Result
+----------------------------------------
+
+Overall public deployment verification: PASSED
