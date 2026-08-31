@@ -17,9 +17,9 @@ map $http_x_forwarded_for $origin_forwarded_for {
 }
 
 # Apply the expensive-operation rate limit only to POST requests.
-map $request_method $seo_audit_rate_key {
+map "$request_method:$uri" $seo_audit_rate_key {
     default "";
-    POST    $binary_remote_addr;
+    "POST:/audit" $binary_remote_addr;
 }
 
 limit_req_zone $seo_audit_rate_key

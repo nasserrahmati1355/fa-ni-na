@@ -1,0 +1,166 @@
+---
+- name: Scope Nginx rate limiting to SEO audit submissions
+  hosts: public_servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../vars/public.yml
+
+  vars:
+    deployment_dir: /opt/seo-auditor
+    source_realip_template: >-
+      {{ playbook_dir }}/../templates/00-arvan-realip.conf.j2
+    deployed_realip_config: >-
+      {{ deployment_dir }}/nginx/00-arvan-realip.conf
+
+  tasks:
+    - name: Update the canonical rate-limit template on the Controller
+      ansible.builtin.replace:
+        path: "{{ source_realip_template }}"
+        regexp: '(?ms)^map \$request_method \$seo_audit_rate_key \{\s*default "";\s*POST\s+\$binary_remote_addr;\s*\}'
+        replace: |-
+          map "$request_method:$uri" $seo_audit_rate_key {
+              default "";
+              "POST:/audit" $binary_remote_addr;
+          }
+        backup: true
+      delegate_to: localhost
+      become: false
+
+    - name: Update the deployed Nginx rate-limit configuration
+      ansible.builtin.replace:
+        path: "{{ deployed_realip_config }}"
+        regexp: '(?ms)^map \$request_method \$seo_audit_rate_key \{\s*default "";\s*POST\s+\$binary_remote_addr;\s*\}'
+        replace: |-
+          map "$request_method:$uri" $seo_audit_rate_key {
+              default "";
+              "POST:/audit" $binary_remote_addr;
+          }
+        backup: true
+
+    - name: Read the canonical rate-limit template
+      ansible.builtin.slurp:
+        path: "{{ source_realip_template }}"
+      register: source_rate_limit_config
+      delegate_to: localhost
+      become: false
+
+    - name: Read the deployed rate-limit configuration
+      ansible.builtin.slurp:
+        path: "{{ deployed_realip_config }}"
+      register: deployed_rate_limit_config
+
+    - name: Confirm the rate limit applies only to POST audit requests
+      ansible.builtin.assert:
+        that:
+          - >-
+            '"POST:/audit"'
+            in (source_rate_limit_config.content | b64decode)
+          - >-
+            '"POST:/audit"'
+            in (deployed_rate_limit_config.content | b64decode)
+          - >-
+            'map $request_method $seo_audit_rate_key'
+            not in (source_rate_limit_config.content | b64decode)
+          - >-
+            'map $request_method $seo_audit_rate_key'
+            not in (deployed_rate_limit_config.content | b64decode)
+        fail_msg: >-
+          The broad POST rate-limit map was not replaced correctly.
+        success_msg: >-
+          Only POST /audit is included in the SEO rate-limit bucket.
+
+    - name: Test the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Recreate Nginx to refresh the single-file bind mount
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - up
+          - --detach
+          - --force-recreate
+          - --no-deps
+          - --wait
+          - --wait-timeout
+          - "90"
+          - proxy
+        chdir: "{{ deployment_dir }}"
+      changed_when: true
+
+    - name: Read the active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -T
+        chdir: "{{ deployment_dir }}"
+      register: active_nginx_configuration
+      changed_when: false
+
+    - name: Confirm the active rate limit applies only to POST audit
+      ansible.builtin.assert:
+        that:
+          - >-
+            'map "$request_method:$uri" $seo_audit_rate_key'
+            in active_nginx_configuration.stdout
+          - >-
+            '"POST:/audit" $binary_remote_addr;'
+            in active_nginx_configuration.stdout
+          - >-
+            'map $request_method $seo_audit_rate_key'
+            not in active_nginx_configuration.stdout
+        fail_msg: >-
+          The active Nginx container did not load the updated rate-limit
+          configuration.
+        success_msg: >-
+          Active Nginx rate limiting is scoped only to POST /audit.
+
+    - name: Verify POST login is handled by Flask instead of Nginx rate limiting
+      ansible.builtin.uri:
+        url: "https://{{ application_domain }}/login"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          username: rate-limit-probe
+          password: rate-limit-probe
+        headers:
+          Origin: "https://{{ application_domain }}"
+          Referer: "https://{{ application_domain }}/login"
+          Cache-Control: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: none
+        status_code: 400
+        return_content: false
+        timeout: 30
+      delegate_to: localhost
+      become: false
