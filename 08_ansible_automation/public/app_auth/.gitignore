@@ -1,6 +1,7 @@
 .secrets/
 generated_app_admin_credentials.txt
 app_auth_playbook_output.txt
-app_auth_verification_output.txt
-app_auth_deployment_report.txt
 app_auth_verification.txt
+app_auth_deployment_report.txt
+remove_nginx_basic_auth_output.txt
+nginx_basic_auth_removal_report.txt

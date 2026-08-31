@@ -1,5 +1,5 @@
 ---
-- name: Add application login while preserving Nginx Basic Auth
+- name: Deploy Flask application authentication without Nginx Basic Auth
   hosts: public_servers
   become: true
   gather_facts: false
@@ -10,14 +10,6 @@
     - vars/app_auth.yml
 
   pre_tasks:
-    - name: Require the existing Nginx Basic Authentication layer
-      ansible.builtin.assert:
-        that:
-          - enable_basic_auth | bool
-        fail_msg: >-
-          Stage 2 intentionally preserves the outer Nginx Basic Auth layer.
-          Set enable_basic_auth=true before running this playbook.
-
     - name: Check required application source files on the Controller
       ansible.builtin.stat:
         path: "{{ app_auth_source_dir }}/{{ item }}"
@@ -47,23 +39,6 @@
       loop_control:
         label: "{{ item.item }}"
 
-    - name: Check the existing Basic Auth password on the Controller
-      ansible.builtin.stat:
-        path: "{{ basic_auth_password_file }}"
-      register: basic_auth_password_stat
-      delegate_to: localhost
-      become: false
-
-    - name: Stop when the existing Basic Auth password is missing
-      ansible.builtin.assert:
-        that:
-          - basic_auth_password_stat.stat.exists | default(false)
-          - basic_auth_password_stat.stat.isreg | default(false)
-        fail_msg: >-
-          The existing Basic Auth password file was not found:
-          {{ basic_auth_password_file }}.
-          Run the public deployment automation first.
-
     - name: Check deployed Origin prerequisites
       ansible.builtin.stat:
         path: "{{ item.path }}"
@@ -73,7 +48,6 @@
       loop:
         - path: "{{ deployment_dir }}/.env"
         - path: "{{ deployment_dir }}/secrets/db_password.txt"
-        - path: "{{ deployment_dir }}/nginx/htpasswd"
         - path: "{{ deployment_dir }}/nginx/00-arvan-realip.conf"
         - path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
         - path: "{{ letsencrypt_fullchain_path }}"
@@ -100,21 +74,21 @@
         path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
       register: active_nginx_configuration
 
-    - name: Confirm Basic Auth and Origin TLS are currently active
+    - name: Confirm Origin TLS is active and Nginx Basic Auth is absent
       ansible.builtin.assert:
         that:
-          - >-
-            'auth_basic "Nhref SEO Auditor"'
-            in (active_nginx_configuration.content | b64decode)
           - >-
             'listen 443 ssl'
             in (active_nginx_configuration.content | b64decode)
           - >-
             letsencrypt_fullchain_path
             in (active_nginx_configuration.content | b64decode)
+          - >-
+            'auth_basic'
+            not in (active_nginx_configuration.content | b64decode)
         fail_msg: >-
-          The active Nginx configuration does not contain both the outer
-          Basic Auth layer and Origin TLS. Complete Stage 1 first.
+          Origin TLS must remain active and Nginx Basic Auth must be absent.
+
 
   tasks:
     - name: Create the local application-auth secret directory
@@ -144,17 +118,6 @@
         mode: "0600"
       delegate_to: localhost
       become: false
-
-    - name: Retrieve the existing Nginx Basic Auth password
-      ansible.builtin.set_fact:
-        basic_auth_password: >-
-          {{
-            lookup(
-              'ansible.builtin.password',
-              basic_auth_password_file
-            )
-          }}
-      no_log: true
 
     - name: Ensure the backend secret group exists
       ansible.builtin.group:
@@ -476,41 +439,22 @@
       register: app_auth_nginx_test
       changed_when: false
 
-    - name: Verify that Basic Auth still protects the public login page
-      ansible.builtin.uri:
-        url: >-
-          https://{{ application_domain }}/login?outer_auth_check={{
-            lookup('ansible.builtin.pipe', 'date +%s')
-          }}
-        method: GET
-        validate_certs: true
-        use_proxy: false
-        follow_redirects: none
-        status_code: 401
-        return_content: false
-        timeout: 45
-      register: outer_basic_auth_test
-      delegate_to: localhost
-      become: false
-
-    - name: Verify layered authentication with a persistent cookie jar
+    - name: Verify Flask application authentication without Nginx Basic Auth
       ansible.builtin.command:
         argv:
           - /bin/bash
-          - "{{ playbook_dir }}/scripts/verify_layered_auth.sh"
+          - "{{ playbook_dir }}/scripts/verify_application_auth.sh"
           - "{{ application_domain }}"
-          - "{{ basic_auth_username }}"
-          - "{{ basic_auth_password_file }}"
           - "{{ app_admin_username }}"
           - "{{ app_admin_password_file }}"
-      register: layered_auth_flow
+      register: application_auth_flow
       changed_when: false
       delegate_to: localhost
       become: false
 
-    - name: Display non-sensitive layered authentication diagnostics
+    - name: Display non-sensitive application authentication diagnostics
       ansible.builtin.debug:
-        var: layered_auth_flow.stdout_lines
+        var: application_auth_flow.stdout_lines
 
     - name: Read the final Compose service status
       ansible.builtin.command:
@@ -545,8 +489,8 @@
           Application admin:
           {{ app_admin_username }}
 
-          Existing outer Basic Auth:
-          PRESERVED
+          Nginx Basic Authentication:
+          REMOVED
 
           Flask Login:
           ENABLED
@@ -574,21 +518,22 @@
           Authentication Tests
           ----------------------------------------
 
-          Public request without Basic Auth: 401 PASSED
-          Flask login page with Basic Auth: 200 PASSED
+          Public Flask login page without Basic Auth: 200 PASSED
+          Unauthenticated dashboard redirect to Flask login: PASSED
           CSRF-protected application login: PASSED
           Protected SEO dashboard: 200 PASSED
+          CSRF-protected logout: PASSED
 
           Final result:
-          Layered authentication deployment: PASSED
+          Application-only authentication deployment: PASSED
       delegate_to: localhost
       become: false
 
     - name: Display the Stage 2 result
       ansible.builtin.debug:
         msg:
-          - "Outer Nginx Basic Auth is still enabled."
-          - "Flask application login is enabled."
+          - "Nginx Basic Auth has been removed."
+          - "Flask application login is the active authentication layer."
           - "Application admin: {{ app_admin_username }}"
           - "Credentials: {{ generated_app_admin_credentials_file }}"
           - "Report: {{ app_auth_deployment_report }}"

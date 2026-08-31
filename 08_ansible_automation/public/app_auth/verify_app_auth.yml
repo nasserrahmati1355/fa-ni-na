@@ -1,5 +1,5 @@
 ---
-- name: Verify layered Nginx and Flask authentication
+- name: Verify Flask application authentication without Nginx Basic Auth
   hosts: public_servers
   become: true
   gather_facts: false
@@ -10,37 +10,22 @@
     - vars/app_auth.yml
 
   tasks:
-    - name: Check local authentication credential files
+    - name: Check the local application administrator password
       ansible.builtin.stat:
-        path: "{{ item }}"
-      loop:
-        - "{{ basic_auth_password_file }}"
-        - "{{ app_admin_password_file }}"
-      register: local_auth_credential_files
+        path: "{{ app_admin_password_file }}"
+      register: app_admin_password_stat
       delegate_to: localhost
       become: false
 
-    - name: Stop when a local authentication credential is missing
+    - name: Stop when the application administrator password is missing
       ansible.builtin.assert:
         that:
-          - item.stat.exists | default(false)
-          - item.stat.isreg | default(false)
-          - (item.stat.size | default(0) | int) > 0
-        fail_msg: "Required local credential file is missing: {{ item.item }}"
-      loop: "{{ local_auth_credential_files.results }}"
-      loop_control:
-        label: "{{ item.item }}"
-
-    - name: Retrieve the existing Nginx Basic Auth password
-      ansible.builtin.set_fact:
-        basic_auth_password: >-
-          {{
-            lookup(
-              'ansible.builtin.password',
-              basic_auth_password_file
-            )
-          }}
-      no_log: true
+          - app_admin_password_stat.stat.exists | default(false)
+          - app_admin_password_stat.stat.isreg | default(false)
+          - (app_admin_password_stat.stat.size | default(0) | int) > 0
+        fail_msg: >-
+          Required application administrator password is missing:
+          {{ app_admin_password_file }}
 
     - name: Retrieve the application administrator password
       ansible.builtin.set_fact:
@@ -145,24 +130,22 @@
       delegate_to: localhost
       become: false
 
-    - name: Verify layered authentication with a persistent cookie jar
+    - name: Verify Flask application authentication without Nginx Basic Auth
       ansible.builtin.command:
         argv:
           - /bin/bash
-          - "{{ playbook_dir }}/scripts/verify_layered_auth.sh"
+          - "{{ playbook_dir }}/scripts/verify_application_auth.sh"
           - "{{ application_domain }}"
-          - "{{ basic_auth_username }}"
-          - "{{ basic_auth_password_file }}"
           - "{{ app_admin_username }}"
           - "{{ app_admin_password_file }}"
-      register: layered_auth_flow
+      register: application_auth_flow
       changed_when: false
       delegate_to: localhost
       become: false
 
-    - name: Display non-sensitive layered authentication diagnostics
+    - name: Display non-sensitive application authentication diagnostics
       ansible.builtin.debug:
-        var: layered_auth_flow.stdout_lines
+        var: application_auth_flow.stdout_lines
 
     - name: Collect recent Backend authentication logs
       ansible.builtin.command:
@@ -189,7 +172,7 @@
         mode: "0644"
         content: |
           ========================================
-          Layered Authentication Verification
+          Application Authentication Verification
           ========================================
 
           Generated at:
@@ -232,11 +215,12 @@
           {{ layered_auth_health_test.content | trim }}
 
           ----------------------------------------
-          Authentication Layers
+          Application Authentication
           ----------------------------------------
 
-          Nginx Basic Auth without credentials: 401 PASSED
-          Flask login page through Basic Auth: 200 PASSED
+          Nginx Basic Auth directives: ABSENT
+          Flask login page without outer credentials: 200 PASSED
+          Unauthenticated dashboard redirect: PASSED
           CSRF token rendered: PASSED
           Application login: PASSED
           Protected dashboard: PASSED
@@ -254,20 +238,20 @@
           ----------------------------------------
 
           Origin end-to-end TLS: PASSED
-          Nginx Basic Authentication: PRESERVED
+          Nginx Basic Authentication: REMOVED
           Flask application authentication: PASSED
           Session cookie flow: PASSED
           CSRF protection: PASSED
           Login and logout: PASSED
 
-          Overall layered authentication verification: PASSED
+          Overall application authentication verification: PASSED
       delegate_to: localhost
       become: false
 
     - name: Display the layered-authentication result
       ansible.builtin.debug:
         msg:
-          - "Nginx Basic Auth remains enabled."
-          - "Flask Login, session, CSRF, and logout are working."
+          - "Nginx Basic Auth has been removed."
+          - "Flask Login, session, CSRF, and logout are the active authentication controls."
           - "Report: {{ app_auth_verification_report }}"
-          - "Overall layered authentication verification: PASSED"
+          - "Overall application authentication verification: PASSED"

@@ -34,7 +34,8 @@ trusted_hosts:
 auth_max_failed_attempts: 5
 auth_lockout_minutes: 15
 
-# Existing outer Nginx Basic Authentication remains enabled temporarily.
+# Legacy Nginx Basic Auth credentials are retained only until Stage 6 cleanup.
+# They are no longer used by normal deployment or verification.
 public_automation_dir: "{{ playbook_dir }}/.."
 basic_auth_local_dir: "{{ public_automation_dir }}/.secrets"
 basic_auth_password_file: >-

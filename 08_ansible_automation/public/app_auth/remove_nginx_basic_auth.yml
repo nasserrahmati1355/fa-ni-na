@@ -1,0 +1,383 @@
+---
+- name: Remove Nginx Basic Auth and keep Flask application authentication
+  hosts: public_servers
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../vars/public.yml
+    - ../origin_tls/vars/origin_tls.yml
+    - vars/app_auth.yml
+
+  vars:
+    basic_auth_removal_report: >-
+      {{ playbook_dir }}/nginx_basic_auth_removal_report.txt
+
+  pre_tasks:
+    - name: Check the application administrator password on the Controller
+      ansible.builtin.stat:
+        path: "{{ app_admin_password_file }}"
+      register: app_admin_password_stat
+      delegate_to: localhost
+      become: false
+
+    - name: Stop when the application administrator password is missing
+      ansible.builtin.assert:
+        that:
+          - app_admin_password_stat.stat.exists | default(false)
+          - app_admin_password_stat.stat.isreg | default(false)
+          - (app_admin_password_stat.stat.size | default(0) | int) > 0
+        fail_msg: >-
+          The application administrator password was not found:
+          {{ app_admin_password_file }}.
+
+    - name: Check the current Nginx Basic Auth password on the Controller
+      ansible.builtin.stat:
+        path: "{{ basic_auth_password_file }}"
+      register: legacy_basic_auth_password_stat
+      delegate_to: localhost
+      become: false
+
+    - name: Check deployed Origin prerequisites
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+        follow: "{{ item.follow | default(false) }}"
+        get_checksum: false
+        get_mime: false
+      loop:
+        - path: "{{ deployment_dir }}/.env"
+        - path: "{{ deployment_dir }}/docker-compose.yml"
+        - path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        - path: "{{ deployment_dir }}/secrets/flask_secret_key.txt"
+        - path: "{{ letsencrypt_fullchain_path }}"
+          follow: true
+        - path: "{{ letsencrypt_private_key_path }}"
+          follow: true
+      register: stage5_prerequisites
+
+    - name: Stop when a deployed prerequisite is missing
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists | default(false)
+          - item.stat.isreg | default(false)
+          - (item.stat.size | default(0) | int) > 0
+        fail_msg: >-
+          Required deployed file is missing, broken, or empty:
+          {{ item.item.path }}
+      loop: "{{ stage5_prerequisites.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+
+    - name: Read the current deployed Nginx configuration
+      ansible.builtin.slurp:
+        path: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+      register: current_nginx_configuration
+
+    - name: Detect whether the legacy Nginx Basic Auth layer is active
+      ansible.builtin.set_fact:
+        legacy_basic_auth_active: >-
+          {{
+            'auth_basic'
+            in (current_nginx_configuration.content | b64decode)
+          }}
+
+    - name: Require the legacy Basic Auth password for the pre-migration test
+      ansible.builtin.assert:
+        that:
+          - legacy_basic_auth_password_stat.stat.exists | default(false)
+          - legacy_basic_auth_password_stat.stat.isreg | default(false)
+          - >-
+            (legacy_basic_auth_password_stat.stat.size
+            | default(0)
+            | int) > 0
+        fail_msg: >-
+          Nginx Basic Auth is active, but its local password file is missing:
+          {{ basic_auth_password_file }}.
+      when: legacy_basic_auth_active | bool
+
+    - name: Verify the existing two-layer login before migration
+      ansible.builtin.command:
+        argv:
+          - /bin/bash
+          - "{{ playbook_dir }}/scripts/verify_layered_auth.sh"
+          - "{{ application_domain }}"
+          - "{{ basic_auth_username }}"
+          - "{{ basic_auth_password_file }}"
+          - "{{ app_admin_username }}"
+          - "{{ app_admin_password_file }}"
+      register: pre_migration_layered_auth
+      changed_when: false
+      delegate_to: localhost
+      become: false
+      when: legacy_basic_auth_active | bool
+
+  tasks:
+    - name: Copy the updated Flask Login page
+      ansible.builtin.copy:
+        src: "{{ app_auth_source_dir }}/app/templates/login.html"
+        dest: "{{ deployment_dir }}/app/templates/login.html"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+
+    - name: Render Compose without the htpasswd mount
+      ansible.builtin.template:
+        src: templates/docker-compose.app-auth-origin-tls.yml.j2
+        dest: "{{ deployment_dir }}/docker-compose.yml"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Render Origin TLS Nginx without auth_basic
+      ansible.builtin.template:
+        src: ../origin_tls/templates/10-seo-auditor-origin-tls.conf.j2
+        dest: "{{ deployment_dir }}/nginx/10-seo-auditor.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_group }}"
+        mode: "0644"
+        backup: true
+
+    - name: Validate Docker Compose
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+          - --quiet
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Read rendered Compose
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - config
+        chdir: "{{ deployment_dir }}"
+      register: rendered_compose_configuration
+      changed_when: false
+
+    - name: Confirm htpasswd is no longer mounted
+      ansible.builtin.assert:
+        that:
+          - "'/etc/nginx/auth/htpasswd' not in rendered_compose_configuration.stdout"
+          - "'nginx/htpasswd' not in rendered_compose_configuration.stdout"
+        fail_msg: "The rendered Compose configuration still mounts htpasswd."
+
+    - name: Test the new Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - run
+          - --rm
+          - --no-deps
+          - proxy
+          - nginx
+          - -t
+        chdir: "{{ deployment_dir }}"
+      changed_when: false
+
+    - name: Build Backend with the updated Login page
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - build
+          - backend
+        chdir: "{{ deployment_dir }}"
+      changed_when: true
+
+    - name: Recreate Backend and Nginx without Basic Auth
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - up
+          - --detach
+          - --force-recreate
+          - --wait
+          - --wait-timeout
+          - "300"
+          - backend
+          - proxy
+        chdir: "{{ deployment_dir }}"
+      changed_when: true
+
+    - name: Wait for Origin HTTPS
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ origin_https_port }}"
+        state: started
+        timeout: 60
+
+    - name: Dump active Nginx configuration
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - exec
+          - -T
+          - proxy
+          - nginx
+          - -T
+        chdir: "{{ deployment_dir }}"
+      register: active_nginx_dump
+      changed_when: false
+
+    - name: Confirm auth_basic is absent from active Nginx
+      ansible.builtin.assert:
+        that:
+          - >-
+            'auth_basic'
+            not in (
+              (active_nginx_dump.stdout | default(''))
+              ~ (active_nginx_dump.stderr | default(''))
+            )
+          - >-
+            '/etc/nginx/auth/htpasswd'
+            not in (
+              (active_nginx_dump.stdout | default(''))
+              ~ (active_nginx_dump.stderr | default(''))
+            )
+        fail_msg: "The active Nginx configuration still contains Basic Auth."
+
+    - name: Verify the Origin TLS marker through ArvanCloud
+      ansible.builtin.uri:
+        url: >-
+          https://{{ application_domain }}{{ origin_tls_health_path }}?stage5={{
+            lookup('ansible.builtin.pipe', 'date +%s%N')
+          }}
+        method: GET
+        headers:
+          Cache-Control: no-cache
+          Pragma: no-cache
+        validate_certs: true
+        use_proxy: false
+        follow_redirects: safe
+        status_code: 200
+        return_content: true
+        timeout: 45
+      register: stage5_origin_tls_test
+      delegate_to: localhost
+      become: false
+
+    - name: Confirm ArvanCloud still reaches HTTPS Origin
+      ansible.builtin.assert:
+        that:
+          - stage5_origin_tls_test.content | trim == "origin-tls-ok"
+        fail_msg: "The Origin TLS marker was not returned through ArvanCloud."
+
+    - name: Verify Flask authentication as the only login layer
+      ansible.builtin.command:
+        argv:
+          - /bin/bash
+          - "{{ playbook_dir }}/scripts/verify_application_auth.sh"
+          - "{{ application_domain }}"
+          - "{{ app_admin_username }}"
+          - "{{ app_admin_password_file }}"
+      register: application_only_auth_flow
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Display non-sensitive authentication diagnostics
+      ansible.builtin.debug:
+        var: application_only_auth_flow.stdout_lines
+
+    - name: Check whether legacy htpasswd remains for Stage 6 cleanup
+      ansible.builtin.stat:
+        path: "{{ deployment_dir }}/nginx/htpasswd"
+      register: retained_htpasswd_file
+
+    - name: Read final Compose status
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --env-file
+          - .env
+          - -f
+          - docker-compose.yml
+          - ps
+          - --all
+        chdir: "{{ deployment_dir }}"
+      register: stage5_compose_status
+      changed_when: false
+
+    - name: Write Stage 5 report on the Controller
+      ansible.builtin.copy:
+        dest: "{{ basic_auth_removal_report }}"
+        mode: "0644"
+        content: |
+          ========================================
+          Stage 5 - Nginx Basic Auth Removal
+          ========================================
+
+          Generated at:
+          {{ lookup('ansible.builtin.pipe', 'date --iso-8601=seconds') }}
+
+          Domain: {{ application_domain }}
+          Origin TLS: PASSED
+          Nginx auth_basic directives: REMOVED
+          Nginx htpasswd mount: REMOVED
+          Flask Login: ACTIVE
+          Session Cookie security: PASSED
+          CSRF positive and negative tests: PASSED
+          Login and Logout: PASSED
+          Legacy htpasswd retained for Stage 6 cleanup:
+          {{ retained_htpasswd_file.stat.exists | default(false) }}
+
+          ----------------------------------------
+          Docker Compose Status
+          ----------------------------------------
+
+          {{ stage5_compose_status.stdout }}
+
+          ----------------------------------------
+          Authentication Test
+          ----------------------------------------
+
+          {{ application_only_auth_flow.stdout }}
+
+          ----------------------------------------
+          Final Result
+          ----------------------------------------
+
+          Overall Nginx Basic Auth removal: PASSED
+      delegate_to: localhost
+      become: false
+
+    - name: Display Stage 5 result
+      ansible.builtin.debug:
+        msg:
+          - "Nginx Basic Auth directives and mount have been removed."
+          - "Flask Login is now the only interactive authentication layer."
+          - "The old htpasswd file is retained but unused until Stage 6."
+          - "Report: {{ basic_auth_removal_report }}"
+          - "Overall Nginx Basic Auth removal: PASSED"

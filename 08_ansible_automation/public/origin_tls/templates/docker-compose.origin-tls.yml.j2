@@ -73,10 +73,7 @@ services:
     volumes:
       - ./nginx/00-arvan-realip.conf:/etc/nginx/conf.d/00-arvan-realip.conf:ro
       - ./nginx/10-seo-auditor.conf:/etc/nginx/conf.d/default.conf:ro
-{% if enable_basic_auth %}
-      - ./nginx/htpasswd:/etc/nginx/auth/htpasswd:ro
-{% endif %}
-      - ./certbot/www:/var/www/certbot:ro
+- ./certbot/www:/var/www/certbot:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
       - frontnet
