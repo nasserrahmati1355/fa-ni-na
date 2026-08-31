@@ -2,3 +2,5 @@
 generated_basic_auth_credentials.txt
 playbook_output_public.txt
 verification_public.txt
+
+/verification_public.txt
