@@ -3,14 +3,15 @@
 set -Eeuo pipefail
 umask 077
 
-if [[ "$#" -ne 3 ]]; then
-    echo "Usage: $0 DOMAIN APP_USER APP_PASSWORD_FILE" >&2
+if [[ "$#" -lt 3 || "$#" -gt 4 ]]; then
+    echo "Usage: $0 DOMAIN APP_USER APP_PASSWORD_FILE [ORIGIN_IP]" >&2
     exit 64
 fi
 
 DOMAIN="$1"
 APP_USER="$2"
 APP_PASSWORD_FILE="$3"
+ORIGIN_IP="${4:-}"
 
 if [[ ! -s "$APP_PASSWORD_FILE" ]]; then
     echo "ERROR: Application password file is missing or empty: $APP_PASSWORD_FILE" >&2
@@ -47,9 +48,19 @@ CURL_COMMON=(
     --show-error
     --connect-timeout 10
     --max-time 60
+    --noproxy '*'
     --header 'Cache-Control: no-cache'
     --header 'Pragma: no-cache'
 )
+
+VERIFICATION_PATH="public_edge"
+
+if [[ -n "$ORIGIN_IP" ]]; then
+    CURL_COMMON+=(
+        --resolve "${DOMAIN}:443:${ORIGIN_IP}"
+    )
+    VERIFICATION_PATH="direct_origin"
+fi
 
 LOGIN_PAGE_STATUS="$(
     curl "${CURL_COMMON[@]}" \
@@ -58,21 +69,21 @@ LOGIN_PAGE_STATUS="$(
         --dump-header "$LOGIN_HEADERS" \
         --output "$LOGIN_HTML" \
         --write-out '%{http_code}' \
-        "https://${DOMAIN}/login?stage5_login=$(date +%s%N)"
+        "https://${DOMAIN}/login?stage7_login=$(date +%s%N)"
 )"
 
 if [[ "$LOGIN_PAGE_STATUS" != "200" ]]; then
-    echo "ERROR: Expected public GET /login status 200, received $LOGIN_PAGE_STATUS." >&2
+    echo "ERROR: Expected GET /login status 200, received $LOGIN_PAGE_STATUS." >&2
     exit 1
 fi
 
 if grep -qi '^WWW-Authenticate:[[:space:]]*Basic' "$LOGIN_HEADERS"; then
-    echo "ERROR: Nginx still returned a Basic Authentication challenge." >&2
+    echo "ERROR: A Basic Authentication challenge is still active." >&2
     exit 1
 fi
 
 grep -Fq 'ورود به SEO Auditor' "$LOGIN_HTML" || {
-    echo "ERROR: The Flask login page marker was not found." >&2
+    echo "ERROR: The Flask login-page marker was not found." >&2
     exit 1
 }
 
@@ -81,7 +92,7 @@ UNAUTH_DASHBOARD_STATUS="$(
         --dump-header "$DASHBOARD_HEADERS" \
         --output /dev/null \
         --write-out '%{http_code}' \
-        "https://${DOMAIN}/?stage5_unauth=$(date +%s%N)"
+        "https://${DOMAIN}/?stage7_unauth=$(date +%s%N)"
 )"
 
 case "$UNAUTH_DASHBOARD_STATUS" in
@@ -104,7 +115,7 @@ if [[ "$UNAUTH_DASHBOARD_LOCATION" != *"/login"* ]]; then
     exit 1
 fi
 
-# Negative CSRF test: Flask-WTF must reject this before credentials are checked.
+# A missing CSRF token must be rejected before credentials are evaluated.
 CSRF_NEGATIVE_STATUS="$(
     curl "${CURL_COMMON[@]}" \
         --cookie "$COOKIE_JAR" \
@@ -124,7 +135,7 @@ if [[ "$CSRF_NEGATIVE_STATUS" != "400" ]]; then
     exit 1
 fi
 
-LOGIN_CSRF_TOKEN="$(python3 - "$LOGIN_HTML" <<'PY'
+LOGIN_CSRF_TOKEN="$(python3 - "$LOGIN_HTML" <<'PYCODE'
 from html.parser import HTMLParser
 from pathlib import Path
 import sys
@@ -151,10 +162,10 @@ if not parser.token:
     raise SystemExit("CSRF token was not found in the login page.")
 
 print(parser.token)
-PY
+PYCODE
 )"
 
-python3 - "$LOGIN_FORM" "$APP_USER" "$APP_PASSWORD_FILE" "$LOGIN_CSRF_TOKEN" <<'PY'
+python3 - "$LOGIN_FORM" "$APP_USER" "$APP_PASSWORD_FILE" "$LOGIN_CSRF_TOKEN" <<'PYCODE'
 from pathlib import Path
 import sys
 from urllib.parse import urlencode
@@ -175,7 +186,7 @@ output_path.write_text(
     ),
     encoding="utf-8",
 )
-PY
+PYCODE
 
 LOGIN_SUBMIT_STATUS="$(
     curl "${CURL_COMMON[@]}" \
@@ -237,7 +248,7 @@ DASHBOARD_STATUS="$(
         --dump-header "$DASHBOARD_HEADERS" \
         --output "$DASHBOARD_HTML" \
         --write-out '%{http_code}' \
-        "https://${DOMAIN}/?stage5_dashboard=$(date +%s%N)"
+        "https://${DOMAIN}/?stage7_dashboard=$(date +%s%N)"
 )"
 
 if [[ "$DASHBOARD_STATUS" != "200" ]]; then
@@ -267,7 +278,7 @@ grep -Fq 'خروج' "$DASHBOARD_HTML" || {
     exit 1
 }
 
-LOGOUT_CSRF_TOKEN="$(python3 - "$DASHBOARD_HTML" <<'PY'
+LOGOUT_CSRF_TOKEN="$(python3 - "$DASHBOARD_HTML" <<'PYCODE'
 from html.parser import HTMLParser
 from pathlib import Path
 import sys
@@ -307,10 +318,10 @@ if not parser.token:
     raise SystemExit("Logout CSRF token was not found in the dashboard.")
 
 print(parser.token)
-PY
+PYCODE
 )"
 
-python3 - "$LOGOUT_FORM" "$LOGOUT_CSRF_TOKEN" <<'PY'
+python3 - "$LOGOUT_FORM" "$LOGOUT_CSRF_TOKEN" <<'PYCODE'
 from pathlib import Path
 import sys
 from urllib.parse import urlencode
@@ -319,7 +330,7 @@ Path(sys.argv[1]).write_text(
     urlencode({"csrf_token": sys.argv[2]}),
     encoding="utf-8",
 )
-PY
+PYCODE
 
 LOGOUT_STATUS="$(
     curl "${CURL_COMMON[@]}" \
@@ -372,6 +383,7 @@ if [[ "$POST_LOGOUT_LOCATION" != *"/login"* ]]; then
 fi
 
 printf '%s\n' \
+    "verification_path=$VERIFICATION_PATH" \
     "nginx_basic_auth_challenge=absent" \
     "login_page_status=$LOGIN_PAGE_STATUS" \
     "unauthenticated_dashboard_status=$UNAUTH_DASHBOARD_STATUS" \
@@ -380,6 +392,8 @@ printf '%s\n' \
     "login_submit_status=$LOGIN_SUBMIT_STATUS" \
     "session_cookie_present=yes" \
     "session_cookie_secure=yes" \
+    "session_cookie_httponly=yes" \
+    "session_cookie_samesite=lax" \
     "dashboard_status=$DASHBOARD_STATUS" \
     "dashboard_user_marker=yes" \
     "logout_submit_status=$LOGOUT_STATUS" \
